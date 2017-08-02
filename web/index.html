@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+[redirect]
+<meta charset="utf-8">
+<title>rmplayer gui</title>
+<style type="text/css">
+a:link {
+	text-decoration: none;
+}
+a:visited {
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: none;
+}
+a:active {
+	text-decoration: none;
+}
+body {
+	width: 100% /* or you can also set 900px*/
+}
+/*! jQuery Mobile v1.0 jquerymobile.com | jquery.org/license */
+.header {
+	border: 1px solid #2a2a2a;
+	background: #111;
+	color: #fff;
+	font-weight: bold;
+	text-shadow: 0 -1px 1px #000;
+	background-image: -webkit-gradient(linear, left top, left bottom, from(#3c3c3c), to(#111));
+	background-image: -webkit-linear-gradient(#3c3c3c, #111);
+	background-image: -moz-linear-gradient(#3c3c3c, #111);
+	background-image: -ms-linear-gradient(#3c3c3c, #111);
+	background-image: -o-linear-gradient(#3c3c3c, #111);
+	background-image: linear-gradient(#3c3c3c, #111);
+	font-size: xx-large;
+	text-align: center;
+}
+.ui-bar-b {
+	border: 1px solid #456f9a;
+	background: #5e87b0;
+	color: #fff;
+	font-weight: bold;
+	text-shadow: 0 -1px 1px #254f7a;
+	background-image: -webkit-gradient(linear, left top, left bottom, from(#81a8ce), to(#5e87b0));
+	background-image: -webkit-linear-gradient(#81a8ce, #5e87b0);
+	background-image: -moz-linear-gradient(#81a8ce, #5e87b0);
+	background-image: -ms-linear-gradient(#81a8ce, #5e87b0);
+	background-image: -o-linear-gradient(#81a8ce, #5e87b0);
+	background-image: linear-gradient(#81a8ce, #5e87b0);
+	font-size: xx-large;
+}
+.button {
+	border: 1px solid #b3b3b3;
+	background: #e9eaeb;
+	color: #3e3e3e;
+	font-weight: bold;
+	text-shadow: 0 1px 1px #fff;
+	background-image: -webkit-gradient(linear, left top, left bottom, from(#f0f0f0), to(#e9eaeb));
+	background-image: -webkit-linear-gradient(#f0f0f0, #e9eaeb);
+	background-image: -moz-linear-gradient(#f0f0f0, #e9eaeb);
+	background-image: -ms-linear-gradient(#f0f0f0, #e9eaeb);
+	background-image: -o-linear-gradient(#f0f0f0, #e9eaeb);
+	background-image: linear-gradient(#f0f0f0, #e9eaeb);
+	font-size: 48px;
+	font-family: Verdana, Geneva, sans-serif;
+}
+.ui-bar-d {
+	border: 1px solid #ccc;
+	background: #bbb;
+	color: #333;
+	text-shadow: 0 1px 0 #eee;
+	background-image: -webkit-gradient(linear, left top, left bottom, from(#ddd), to(#bbb));
+	background-image: -webkit-linear-gradient(#ddd, #bbb);
+	background-image: -moz-linear-gradient(#ddd, #bbb);
+	background-image: -ms-linear-gradient(#ddd, #bbb);
+	background-image: -o-linear-gradient(#ddd, #bbb);
+	background-image: linear-gradient(#ddd, #bbb)
+}
+.ui-bar-e {
+	border: 1px solid #f7c942;
+	background: #fadb4e;
+	color: #333;
+	text-shadow: 0 1px 0 #fff;
+	background-image: -webkit-gradient(linear, left top, left bottom, from(#fceda7), to(#fadb4e));
+	background-image: -webkit-linear-gradient(#fceda7, #fadb4e);
+	background-image: -moz-linear-gradient(#fceda7, #fadb4e);
+	background-image: -ms-linear-gradient(#fceda7, #fadb4e);
+	background-image: -o-linear-gradient(#fceda7, #fadb4e);
+	background-image: linear-gradient(#fceda7, #fadb4e)
+}
+</style>
+</head><body>
+<div data-role="page" id="page">
+	<div>
+		<h1 class="header">RMPLAYER</h1>
+	</div>
+	<center>
+		<div>
+			<h2 class="message">[msg]</h2>
+		</div>
+	<div class="header">
+---
+	</div>
+
+		<a href=/>
+		<div>
+			<h2 class="button">STATUS<a href=/next>
+			</a></h2>
+		</div>
+		<a href=/next>
+		<div>
+			<h2 class="button">NEXT</h2>
+		</div>
+		</a>
+
+		<a href=/play>
+		<div>
+			<h2 class="button">PLAY</h2>
+		</div>
+		</a>
+
+		<a href=/stop>
+		<div>
+			<h2 class="button">STOP</h2>
+		</div>
+		</a>
+
+		</a> <a href=/select>
+		<div>
+			<h2 class="button">SELECT</h2>
+		</div>
+		</a>
+		</a> <a href=/browse>
+		<div>
+			<h2 class="button">BROWSE</h2>
+		</div>
+		</a>
+
+		</a> <a href=/history>
+		<div>
+			<h2 class="button">HISTORY</h2>
+		</div>
+		</a>
+
+		</a>
+		<a href=/scripts>
+		<div>
+			<h2 class="button">SCRIPTS</h2>
+		</div>
+		</a>
+		<a href=/web/config.html>
+		<div>
+			<h2 class="button">CONFIG</h2>
+		</div>
+		</a>
+
+	</center>
+
+	<div data-role="footer">
+		<h4 class="header">version [version]</h4>
+	</div>
+</div>
+</body>
+</html>
