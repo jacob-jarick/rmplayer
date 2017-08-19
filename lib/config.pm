@@ -14,8 +14,10 @@ my %dirs	= ();
 $app{main}{play_count_limit}	= 0;
 $app{main}{sync_every}		= 1;
 $app{main}{debug}		= 0;
+$app{main}{kill_cmd}		= '';
+$app{main}{player_cmd}		= '';
 
-my %dir_defaults = ();
+our %dir_defaults		= ();
 
 $dir_defaults{recursive}	= 0;
 $dir_defaults{enabled}		= 1;
@@ -56,13 +58,12 @@ sub load
 
 	for my $k(keys %hash)
 	{
-		for my $k2(keys $dir_defaults)
+		for my $k2(keys %dir_defaults)
 		{
 			$dirs{$k}{$k2}	= $dir_defaults{$k2};
 			$dirs{$k}{$k2} = $hash{$k}{$k2} if defined $hash{$k}{$k2};
 		}
 	}
-
 }
 
 

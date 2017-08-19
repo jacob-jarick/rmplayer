@@ -7,25 +7,28 @@ use strict;
 
 use Carp qw(cluck longmess shortmess);
 use FindBin qw/$Bin/;
-
+use Time::HiRes qw ( time alarm sleep );	# high precision time
+use Scalar::Util qw(looks_like_number);
+use Data::Dumper::Concise;
 use Config::IniHash;
+use JSON;
 
 use lib			"$Bin/lib";
 use rmvars;
-use webuiserver;
-use memsubs;
-
-use Data::Dumper::Concise;
-use Storable;
-
-use Time::HiRes qw ( time alarm sleep );	# high precision time
-use Scalar::Util qw(looks_like_number);
+# use webuiserver;
+use misc;
+use config;
 
 # =============================================================================
 # Vars
 # =============================================================================
 
-our $home	= '';
+our %history_hash	= ();
+our %ignore_hash	= ();
+our %last_modtime	= ();
+our %in_dirs_file	= ();
+
+our $percent		= 0.90;
 
 my $ascii = q{
 			          o
@@ -47,59 +50,7 @@ my $ascii = q{
 
 };
 
-our $rand_range	= 0;
-our @get_sub_dirs_arr = ();
-
-our %dh = ();	# dirs hash
-our %dir_stack = ();	# dir stack
-
-our %last_modtime = ();	# used to keep track of modified times on files so we do not thrash the disk to much.
-
-
-my $print_delay_seconds	= 0.1;
-
 my $help_txt = "Run and access web ui from http://localhost:8080\n";
-
-our @wght_list		= ();
-our @wght_value		= ();
-our %history_hash	= ();
-our %ignore_hash	= ();
-
-our $play_count_limit	= 0;
-
-# FLAGS
-
-our $DEBUG		= 0;
-our $SYNC		= 0;
-
-
-
-our $sync_every		= 3;
-our $kill_cmd		= '';
-
-# Files
-
-
-# misc
-
-my $file		= '';
-
-my @files		= ();
-our @dirs		= ();
-
-my $play_cmd		= '';
-my $mode_txt		= '';
-my $percent_txt		= '';
-my $que			= '';
-my $help		= '';
-my $questring		= '';
-
-my $file_count		= 0;
-our $percent		= 0.90;		# percent of file count to build history up to until trimming occurs
-
-my $last_modtime_cq = 1;
-
-our $play_count_limit_default	= 0;
 
 # =============================================================================
 # Main
@@ -109,15 +60,19 @@ our $play_count_limit_default	= 0;
 
 &config::load;
 
+our %dh = ();
+{
+	my $ref = &jhash::load($info_file);
+	%dh = %$ref;
+}
+
 # =============================================================================
 # check for lock file
 # =============================================================================
 
-if(-f $play_lock_file)	# check if there is already a lockfile
+if(-f $lock_file)	# check if there is already a lockfile
 {
-	open(FILE, $play_lock_file) or die "ERROR: couldnt open $play_lock_file to read: $!\n";
-	my @tmp = <FILE>;
-	close(FILE);
+	my @tmp = &readf($lock_file);
 	my $pid = $tmp[0];
 	my $exists = 0;
 	if($pid =~ /^(\d+)/)
@@ -130,18 +85,15 @@ if(-f $play_lock_file)	# check if there is already a lockfile
 	{
 		print	"\n\n\n\n\n",
 		"*******************************************************************************\n",
-		"* stale lockfile $play_lock_file removed. *\n",
+		"* stale lockfile $lock_file removed. *\n",
 		"*******************************************************************************\n\n\n\n\n\n";
-		unlink $play_lock_file;
+		unlink $lock_file;
 	}
 	else
 	{
-		my $name = $file;
-		$name =~ s/^.*\///;
-
 		print	"\n\n\n\n\n",
 		"*******************************************************************************\n",
-		"* lockfile $play_lock_file exists. EXITING *\n",
+		"* lockfile $lock_file exists. EXITING *\n",
 		"*******************************************************************************\n\n\n\n\n\n";
 
 		print	"* bye o/\n\n\n";
@@ -151,45 +103,11 @@ if(-f $play_lock_file)	# check if there is already a lockfile
 }
 
 # create lock file
-&file_save($play_lock_file, $$);
-
-# zero some files.
-
-&save_file($limit_file, $main::play_count_limit);
+&file_save($lock_file, $$);
 
 # =============================================================================
 
 # load %dh if file exists.
-
-if( -f $dh_file)
-{
-	my $ref = retrieve($dh_file);
-	%dh = %$ref;
-}
-else
-{
-	print "WARNING: '$dh_file' not found\n";
-	sleep(2);
-}
-
-# cleanup %dh
-for my $k (keys %dh)
-{
-	delete $dh{$k} if !-d $k;			# dir no longer exists
-	delete $dh{$k} if $k =~ /(\\\\|\/\/)/;		# cleanup mess I made
-}
-
-# read in play command
-my @tmp = &readf($player_cmd_file);
-$play_cmd = $tmp[0];
-chomp $play_cmd;
-
-# read in kill player command
-@tmp = &readf($kill_player_cmd_file);
-$kill_cmd = $tmp[0];
-chomp $kill_cmd;
-
-undef @tmp;
 
 my $first_load = 1;
 &reload;
@@ -197,31 +115,8 @@ my $first_load = 1;
 # start webserver
 
 our $server_pid = 0;
-$server_pid = webuiserver->new(8080)->background();
+# $server_pid = webuiserver->new(8080)->background();
 
-# load history
-# NOTE history.txt is used for displaying play history in webui
-# %dh contains history used by random file selector,
-
-my @history = &readf($history_file);
-
-sleep (0.2);
-
-# Clear screen
-
-
-if(!$DEBUG)
-{
-	if($windows)
-	{
-	#	system("cls");
-	}
-	else
-	{
-		system("clear");
-	}
-}
-#
 # =============================================================================
 # Print start message
 
@@ -239,8 +134,8 @@ print
 *
 * Daemon PID:		$$
 *
-* Player cmd:		$play_cmd
-* Kill Player cmd:	$kill_cmd
+* Player cmd:		$config::app{player_cmd}
+* Kill Player cmd:	$config::app{kill_cmd}
 *
 **=============================================================**
 $ascii
@@ -249,31 +144,14 @@ $ascii
 # =============================================================================
 # Main Loop
 
+my $play_count			= 0;
+my $loops_since_refresh		= 0;
+my $FIRST_STOP			= 1;
+our $STOP			= 0;
 
-my $play_count_limit_tmp = 0;
-my $loops_since_refresh = 0;
-my $FIRST_STOP = 1;
-my $roller_index = 0;
-our $STOP = 0;
-
-my $sync_counter = 0;
 while(1)
 {
-	$play_file = '';
-
-	$sync_counter++;
-	if ($sync_counter > $sync_every)
-	{
-		$SYNC = 1;
-		$sync_counter = 0;
-	}
-	else
-	{
-		$SYNC = 0;
-	}
-
-	#&check_quit;
-	&check_cmds;
+	my $play_file = '';
 
 	#----------------------------------------------
 	# stop check
@@ -283,10 +161,8 @@ while(1)
 		if($FIRST_STOP)
 		{
 			$FIRST_STOP = 0;
-			print "* STOPPED. Waiting to Resume ..._,.-'`";
+			print "* STOPPED. Waiting to Resume";
 		}
-		&do_roller;
-		#sleep $print_delay_seconds;
 		next;
 	}
 	$FIRST_STOP = 1;
@@ -294,34 +170,21 @@ while(1)
 	#----------------------------------------------
 	# check play count limit
 
-	$play_count_limit_tmp++;
-	if($main::play_count_limit &&  $main::play_count_limit < $play_count_limit_tmp)
+	$play_count++;
+	if($main::play_count_limit &&  $main::play_count_limit < $play_count)
 	{
 		print "* Hit count limit $main::play_count_limit. stopping playback after next file.\n";
 		$main::play_count_limit = 0;
-		&save_file($limit_file, '0');
 		$STOP = 1;
-	}
-	if(!$main::play_count_limit)
-	{
-		$play_count_limit_tmp = 0;
 	}
 
 	# --------------------------------------------
 	# queue or randomly select play file
 
-	&check_que;
+	$play_file = &check_que;
+	$play_file = &random_select if($play_file eq '');
 
-	# manual mode exit check
-
-	$play_file = &random_select if(!$play_file);
-	&play;
-
-	if(&check_quit == 2)	# dont update history when going backwards
-	{
-		next;
-	}
-	&update_history;
+	&play($play_file);
 }
 &rmp_exit;
 
@@ -331,11 +194,11 @@ while(1)
 
 sub rmp_exit
 {
-	unlink $play_lock_file;
+	unlink $lock_file;
 # 	print Dumper(\%dh);
 	kill 9, $server_pid;
 
-	store \%main::dh, $dh_file;
+	&jhash::save($dh_file, \%main::dh);
 
 	exit 0;
 }
@@ -345,6 +208,7 @@ sub rmp_exit
 
 sub play
 {
+	my $play_file = shift;
 	if (! $play_file)
 	{
 		print "ERROR: play: \$play_file is undef\n";
@@ -365,15 +229,11 @@ sub play
 		&rmp_exit;
 	}
 
-	print "* ";
-	print "$questring$name";
-	print" \n";
-	$questring = '';
+	print "* $name\n";
 	&save_file($current_file, $play_file);
-	my $cmd = "$play_cmd \"$play_file\" > /dev/null 2>&1";
-	$cmd = "$play_cmd \"$play_file\" > NUL" if $windows;
+	my $cmd = "$config::app{player_cmd} \"$play_file\" > /dev/null 2>&1";
+	$cmd = "$config::app{player_cmd} \"$play_file\" > NUL" if $windows;
 
-#	&update_history;
 	system($cmd);
 }
 
@@ -430,6 +290,7 @@ sub random_select
 
 sub check_que
 {
+	my $play_file = '';
 	my $mod_time = (stat($que_file))[9];
 	$mod_time = 0 if !defined $mod_time; # for windows
 	$last_modtime{$que_file} = 0 if ! defined $last_modtime{$que_file};
@@ -461,10 +322,10 @@ sub check_que
 		else
 		{
 			$play_file = $que;
-			$questring = "QUEUED: ";
 		}
 		&save_file_arr($que_file, \@tmp);
 	}
+	return $play_file;
 }
 
 # check for mode adjustments
@@ -493,9 +354,7 @@ sub check_cmds
 		if($cmd =~ /^STOP/)
 		{
 			$STOP = 1;
-			print color 'bold' if !$windows;
 			print "*\n* Stopping playback.. ";
-			print color 'reset'  if !$windows;
 		}
 
 		elsif($cmd =~ /^PLAY/)
@@ -504,45 +363,35 @@ sub check_cmds
 			$main::play_count_limit	= $main::play_count_limit_default	if $main::play_count_limit_default	> 0 && $STOP;
 
 			# reset play limit if stopped
-			$play_count_limit_tmp	= 0		if $STOP;
+			$play_count	= 0		if $STOP;
 
-			print color 'bold'  if !$windows;
 			print "*\n* Resuming playback\n" if $STOP;
 			print "*\n* Skipping to next file\n" if !$STOP;
 			$STOP = 0;
-			print color 'reset'  if !$windows;
 		}
 		elsif($cmd =~ /^IGNORE\t(.*)$/)
 		{
 			my $file = $1;
-			print color 'bold'  if !$windows;
 			print "*\n* WebUI asked me to ignore '$file'\n";
-			print color 'reset'  if !$windows;
 
 			&update_ignore($file);
 		}
 		elsif($cmd =~ /^RELOAD/)
 		{
-			print color 'bold'  if !$windows;
 			print "*\n* $1.\n" if($cmd =~ /^RELOAD\s+(.*)$/);
 			print "*\n* Reload requested.\n";
-			print color 'reset'  if !$windows;
 
 			&reload;
 		}
 		elsif($cmd =~ /^EXIT/)
 		{
-			print color 'bold'  if !$windows;
 			print "*\n* Exit requested.\n";
-			print color 'reset'  if !$windows;
 
 			$got_exit = 1;
 		}
 		else
 		{
-			print color 'bold'  if !$windows;
 			print "*\n* WARNING: Unknown command found: '$cmd'\n";
-			print color 'reset'  if !$windows;
 		}
 
 	}
@@ -565,44 +414,6 @@ sub update_ignore
 }
 
 
-sub update_history
-{
-	my $file = $play_file;
-	my $dir = '';
-
-	$file =~ /^(.+)(\\|\/).+?/;
-	$dir = $1;
-
-	if(! defined $main::dh{$dir})
-	{
-		print "ERROR: update_history: \$main::dh{$dir} not yet defined.\n";
-		&rmp_exit;
-	}
-
-	# keep history file length to 100
-	my $l = scalar(@history);
-	if($l > 110)
-	{
-		my @slice = @history[($l-100) .. $l];	# dont trim to 100 else it updates every cycle
-		@history = @slice;
-		&file_save($history_file, \@history);
-	}
-
-	if(-f $play_file)
-	{
-		push @history, $play_file;
-		push @{$dh{$dir}{'history'}}, $play_file;
-		$dh{$dir}{'history_hash'}{$file} = 1;
-		&file_append($history_file, $file);
-	}
-	if($play_file ne '' && defined $play_file && !-f $play_file )
-	{
-		print "WARNING: update_history play_file '$play_file' is defiend but does not exist.\n";
-	}
-
-	&trim_history($dir);
-	store \%main::dh, $dh_file;	# trim does not always sync
-}
 
 # ---------------------------------------------------
 # check to see if we need to trim dirs history
@@ -631,9 +442,7 @@ sub trim_history
 		my $trim_n = int((1-($percent-$c)) * $dh{$dir}{'count'});	# get amount of files to trim
 		$trim_n = 2 if $trim_n <= 1;	# always trim at least 2 files
 
-		print color 'bold'  if !$windows;
 		print "DEBUG: Trimming History for '$dir', removing $trim_n entrys.\n" if $DEBUG;
-		print color 'reset'  if !$windows;
 
 		$c = 0;
 		while($c <= $trim_n)
@@ -649,58 +458,29 @@ sub trim_history
 
 sub load_playlist
 {
-	@dirs = &readf($dir_file);
-	my $n = 0;
-
 	my @dirs2 = ();
-	for my $d (@dirs)
+	print "LOADING DIRS: ";
+
+	for my $k (keys %config::dirs)
 	{
-		$n++;
-		next if $d =~ /^#/;
-		$d =~ s/\#.*//;
-		chomp $d;
+		my $d = $config::dirs{$k}{path};
 
-		if($d =~ /(\\|\/)$/)
+		if ($config::dirs{$k}{recursive})
 		{
-			print "WARNING: unncessary trailing slash on $dir_file:$n\n'$d'\n";
-			$d =~ s/(\\|\/)$//;
+			print "load_playlist: STUB: load recursive\n";
 		}
-
-		if ($d =~ /^(.*)(\\|\/)\*$/)
+		if(! -d $config::dirs{$k}{path})
 		{
-			my $rd = $1;
-			push @dirs2, $rd;
-			print "* recursive dir '$rd' found\n";
-			@get_sub_dirs_arr = ();
-
-			push @dirs2, &get_sub_dirs($rd);
-		}
-		elsif(-d $d)
-		{
-			push @dirs2, $d;
-		}
-		else
-		{
-			print "WARNING: line $n in $dir_file is invalid:\n'$d'\n";
+			print "WARNING: '$k' path '$config::dirs{$k}{path}' invalid\n";
 			next;
 		}
-	}
-	&save_file_arr($tmp_dir_file, \@dirs2);
-
-	my %in_dirs_file = ();
-
-	$|=1;
-	print "LOADING DIRS: ";
-	for my $d (@dirs2)
-	{
-		print ".";
-		$n++;
-		chomp $d;
+		print '.';
 		$in_dirs_file{$d} = 1; # remember which directories are defined
 
 		@{ $main::dh{$d}{'contents'} } = &dir_files($d);
 		my @tmp = @{ $main::dh{$d}{'contents'} };
 
+		# remove ignored files
 		for my $f(@tmp)
 		{
 			@{ $main::dh{$d}{'contents'} } = grep { $_ ne $f } @{ $main::dh{$d}{'contents'} } if defined $ignore_hash{$f};
@@ -723,7 +503,6 @@ sub load_playlist
 		 		delete $dh{$d}{'history_hash'}{$key};
 		 		#sleep(1);
 		 	}
-
 		 }
 
 		@tmp = ();
@@ -749,21 +528,6 @@ sub load_playlist
 		if(! defined $in_dirs_file{$d})
 		{
 			delete $main::dh{$d};
-		}
-	}
-}
-
-sub load_disabled_list
-{
-	return if (! -f $disable_file);
-
-	my @dirs = &readf($disable_file);
-
-	for my $d(@dirs)
-	{
-		if(defined $main::dh{$d})
-		{
-			$main::dh{$d}{'disabled'} = 1;
 		}
 	}
 }
@@ -825,52 +589,9 @@ sub dir_stack_select
 	}
 }
 
-sub load_play_limit
-{
-	if (!-f $limit_file)
-	{
-		$main::play_count_limit = $main::play_count_limit_default;
-		return 0;
-	}
-	my @tmp = &readf($limit_file);
-
-	if(defined $tmp[0] && $tmp[0] =~ /(\d+)/)
-	{
-		$play_count_limit_tmp = 0;
-		$main::play_count_limit = $1;
-		&save_file($limit_file, '');
-		print "* LIMITING PLAYBACK to $main::play_count_limit files.\n" if  $main::play_count_limit > 0;
-	}
-	else
-	{
-		$main::play_count_limit = $main::play_count_limit_default;
-	}
-
-}
-
 sub reload
 {
-	print "* RELOADING PLAYLIST.\n" if $first_load != 1;
-
-	print "* load_ignore_list\n" if $first_load && $DEBUG;
-	&load_ignore_list;
-	print "* load_playlist\n" if $first_load && $DEBUG;
-	&load_playlist;
-	print "* load_disabled_list\n" if $first_load && $DEBUG;
-	&load_disabled_list;
-	print "* load_wght_list\n" if $first_load && $DEBUG;
-	&load_wght_list;	# load AFTER playlist so %dh is populated
-
-	print "* load_dir_stack\n" if $first_load && $DEBUG;
-	&load_dir_stack;
-
-	print "* load_play_limit\n" if $first_load && $DEBUG;
-	&load_play_limit;
-
-	store \%main::dh, $dh_file;
-
-	$first_load = 0;
-
+	print "reload STUB\n";
 }
 
 sub get_sub_dirs

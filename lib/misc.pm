@@ -34,24 +34,7 @@ sub clean_arr
 # save_file
 #--------------------------------------------------------------------------------------------------------------
 
-sub get_home
-{
-	my $home = undef;
-	$home = $ENV{HOME}		if defined $ENV{HOME} && lc $^O ne lc 'MSWin32';
-	$home = $ENV{USERPROFILE}	if lc $^O eq lc 'MSWin32';
 
-
-	$home = $ENV{TMP}		if ! defined $home; # surely the os has a tmp if nothing else
-	$home =~ s/\\/\//g;
-
-	$home .= "/.rmplayer";
-
-	if(!-d $home)
-	{
-		mkdir($home, 0755) or &main::quit("Cannot mkdir :$home $!\n");
-	}
-	return $home;
-}
 
 sub null_file
 {
@@ -192,11 +175,7 @@ sub readjf
         open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
         my @file = <FILE>;
         close(FILE);
-        $file = join('', @file);
-        $file =~ s/^\n//g;
-        $file =~ s/\n\n+/\n/g;
-
-        return $file;
+        return join('', @file);
 }
 
 
