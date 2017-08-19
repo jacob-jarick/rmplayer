@@ -5,20 +5,18 @@ $| = 1;
 use warnings;
 use strict;
 
+use Carp qw(cluck longmess shortmess);
 use FindBin qw/$Bin/;
 
-use lib			$Bin;
+use Config::IniHash;
+
 use lib			"$Bin/lib";
 use rmvars;
 use webuiserver;
 use memsubs;
 
-use Data::Dumper;
+use Data::Dumper::Concise;
 use Storable;
-
-# bold & color stuff
-use Term::ANSIColor;
-use Term::ReadKey;
 
 use Time::HiRes qw ( time alarm sleep );	# high precision time
 use Scalar::Util qw(looks_like_number);
@@ -109,30 +107,7 @@ our $play_count_limit_default	= 0;
 
 # load config
 
-{
-	my @tmp = readf($config_file);
-
-	for my $c(@tmp)
-	{
-		if($c =~ /^play_count_limit\s+(\d+)/)
-		{
-			$main::play_count_limit = $1;
-			$main::play_count_limit_default = $1;
-			print "* CONFIG: play_count_limit = $1\n";
-		}
-		if($c =~ /^sync_every\s+(\d+)/)
-		{
-			$sync_every = $1;
-			$sync_every = 1 if $sync_every < 1;
-			print "* CONFIG: sync_every = $sync_every\n";
-		}
-		if($c =~ /^DEBUG\s+1/)
-		{
-			$DEBUG = 1;
-			print "* CONFIG: DEBUG enabled\n";
-		}
-	}
-}
+&config::load;
 
 # =============================================================================
 # check for lock file
@@ -176,13 +151,11 @@ if(-f $play_lock_file)	# check if there is already a lockfile
 }
 
 # create lock file
-open(FILE, ">$play_lock_file") or die "ERROR: couldnt open $play_lock_file to write :$!\n";
-print FILE $$;
-close(FILE);
+&file_save($play_lock_file, $$);
 
 # zero some files.
 
-file_ows($limit_file, $main::play_count_limit);
+&save_file($limit_file, $main::play_count_limit);
 
 # =============================================================================
 
@@ -281,21 +254,6 @@ my $play_count_limit_tmp = 0;
 my $loops_since_refresh = 0;
 my $FIRST_STOP = 1;
 my $roller_index = 0;
-my @roller =
-(
-'`',
-'`',
-'\'',
-'-',
-'.',
-',',
-'_',
-',',
-'.',
-'-',
-'\'',
-'`'
-);
 our $STOP = 0;
 
 my $sync_counter = 0;
@@ -341,7 +299,7 @@ while(1)
 	{
 		print "* Hit count limit $main::play_count_limit. stopping playback after next file.\n";
 		$main::play_count_limit = 0;
-		file_ows($limit_file, '0');
+		&save_file($limit_file, '0');
 		$STOP = 1;
 	}
 	if(!$main::play_count_limit)
@@ -358,7 +316,7 @@ while(1)
 
 	$play_file = &random_select if(!$play_file);
 	&play;
-	
+
 	if(&check_quit == 2)	# dont update history when going backwards
 	{
 		next;
@@ -370,69 +328,6 @@ while(1)
 # =============================================================================
 # Subs
 # =============================================================================
-
-sub do_roller
-{
-	$roller_index++;
-	$roller_index = 0 if $roller_index > 11;
-	print $roller[$roller_index];
-}
-
-sub check_quit
-{
-	#----------------------------------------------
-	# check for quit key - waits 0.3
-
-	my $c=time+0.3;
-	my $key = '';
-	ReadMode 4; # Turn off controls keys
-
- 	my $pc = 0;
- 	my $sleep = 0.01;
-
- 	my $print_delay = $print_delay_seconds / $sleep;
-
-	while ($c>time && not defined ($key = ReadKey(-1)))
-	{
-		sleep(0.01);
-		# No key yet
-
- 		$pc++;
- 		if($STOP && !$FIRST_STOP && $pc > $print_delay)
- 		{
- 			$pc = 0;
- 			&do_roller;
- 		}
-	}
-	ReadMode 0; # Reset tty mode
-
-	if($key && $key eq "q")
-	{
-		print "* Got the quit key, quitting :)\n\nThankyou come again.\n\n";
-		&update_history;
-		&rmp_exit;
-	}
-
-	# check for files to ignore
-	if($key && $key eq "Q")
-	{
-		print "* Got the ignore key, ignoring $play_file.\n\n";
-		&update_ignore($play_file);
-	}
-	
-	if($key && $key eq "b")
-	{
-		my @tmp = readf($history_file);
-		#pop @tmp;
-		my $prev = pop @tmp;
-		file_ow($history_file, \@tmp, 1);
-		print "* Got the Back key, playing previous file: $prev\n\n";
-		file_append($que_file, $prev);
-		
-		return 2;
-	}
-	return 0;
-}
 
 sub rmp_exit
 {
@@ -471,12 +366,10 @@ sub play
 	}
 
 	print "* ";
-	print color 'bold' if !$windows;
 	print "$questring$name";
-	print color 'reset'  if !$windows;
 	print" \n";
 	$questring = '';
-	&file_ows($current_file, $play_file);
+	&save_file($current_file, $play_file);
 	my $cmd = "$play_cmd \"$play_file\" > /dev/null 2>&1";
 	$cmd = "$play_cmd \"$play_file\" > NUL" if $windows;
 
@@ -570,7 +463,7 @@ sub check_que
 			$play_file = $que;
 			$questring = "QUEUED: ";
 		}
-		&file_ow($que_file, \@tmp);
+		&save_file_arr($que_file, \@tmp);
 	}
 }
 
@@ -653,7 +546,7 @@ sub check_cmds
 		}
 
 	}
-	file_ows($cmd_file, (''));	# zero file
+	&null_file($cmd_file);	# zero file
 	&rmp_exit if $got_exit;
 }
 
@@ -692,7 +585,7 @@ sub update_history
 	{
 		my @slice = @history[($l-100) .. $l];	# dont trim to 100 else it updates every cycle
 		@history = @slice;
-		&file_ow($history_file, \@history);
+		&file_save($history_file, \@history);
 	}
 
 	if(-f $play_file)
@@ -720,7 +613,7 @@ sub trim_history
 
 	my $history_length = 0;
 	   $history_length = scalar(@{$dh{$dir}{'history'}}) if defined $dh{$dir}{'history'};
-	   
+
 	my $percent_played = $history_length / $dh{$dir}{'count'};
 
 	if
@@ -746,7 +639,7 @@ sub trim_history
 		while($c <= $trim_n)
 		{
 			my $f = shift(@{$dh{$dir}{'history'}});	# remove an entry from the front of array
-			delete $dh{$dir}{'history_hash'}{$f}; #if ! is_in_array($f, $dh{$dir}{'history'});		# delete shifted array value history hash IF it is not still in the array (dupes occur due to user queuing) 
+			delete $dh{$dir}{'history_hash'}{$f}; #if ! is_in_array($f, $dh{$dir}{'history'});		# delete shifted array value history hash IF it is not still in the array (dupes occur due to user queuing)
 			$c++;
 		}
 	}
@@ -792,7 +685,7 @@ sub load_playlist
 			next;
 		}
 	}
-	file_ow($tmp_dir_file, \@dirs2);
+	&save_file_arr($tmp_dir_file, \@dirs2);
 
 	my %in_dirs_file = ();
 
@@ -805,7 +698,7 @@ sub load_playlist
 		chomp $d;
 		$in_dirs_file{$d} = 1; # remember which directories are defined
 
-		@{ $main::dh{$d}{'contents'} } = &fn_readdir($d);
+		@{ $main::dh{$d}{'contents'} } = &dir_files($d);
 		my @tmp = @{ $main::dh{$d}{'contents'} };
 
 		for my $f(@tmp)
@@ -833,7 +726,7 @@ sub load_playlist
 
 		 }
 
-		 @tmp = ();
+		@tmp = ();
 		for my $key (@{$dh{$d}{'history'}})
 		{
 			if(!defined $dh{$d}{'history_hash'}{$key})
@@ -864,11 +757,10 @@ sub load_disabled_list
 {
 	return if (! -f $disable_file);
 
-	my @dirs = readf($disable_file);
+	my @dirs = &readf($disable_file);
 
 	for my $d(@dirs)
 	{
-		chomp $d;
 		if(defined $main::dh{$d})
 		{
 			$main::dh{$d}{'disabled'} = 1;
@@ -888,67 +780,6 @@ sub load_ignore_list
 		print "DEBUG: adding '$f' to ignore hash\n" if $DEBUG;
 		$ignore_hash{$f} = 1;
 	}
-}
-
-sub load_wght_list
-{
-	my @wght = &readf($wght_file);
-	our %wght_hash = ();
-	my $n = 0;
-
-	for(@wght)
-	{
-		$n++;
-		chomp;
-		next if $_ !~ /\w+/;
-		my ($dir, $wght)	= split(/\t+/);
-
-		if($dir =~ /^(.*)(\\|\/)\*$/)
-		{
-			my $rd = $1;
-			if (! -d $rd)
-			{
-				print "WARNING: invalid line wght.txt:$n\n'$_'\n";
-				next;
-			}
-			print "* recursive dir '$rd' found in wght.txt\n";
-			@get_sub_dirs_arr = ();
-			my @tmp = &get_sub_dirs($rd);
-			$wght_hash{$rd} = $wght;
-			for my $td (@tmp)
-			{
-				if(! defined $main::dh{$td})
-				{
-					print "WARNING: dir '$td' defined on wght.txt:$n is not present in $dir_file, ignoring entry\n";
-					next;
-				}
-				$wght_hash{$td} = $wght;
-			}
-			$dir = $rd;	# carry on with loop.
-		}
-
-		if (! -d $dir)
-		{
-			print "WARNING: invalid line wght.txt:$n\n'$_'\n";
-			next;
-		}
-
-		if($dir =~ /(\\|\/)$/)
-		{
-			print "WARNING: unncessary trailing slash on wght.txt:$n\n'$_'\n";
-			$dir =~ s/(\\|\/)$//;
-		}
-
-		if(! defined $main::dh{$dir})
-		{
-			print "WARNING: dir '$dir' defined on wght.txt:$n is not present in $dir_file, ignoring entry\n";
-			next;
-		}
-
-		$wght_hash{$dir} = $wght;
-	}
-
-	print "Weight Hash: \n" . Dumper(\%wght_hash) if $DEBUG;
 }
 
 sub load_dir_stack
@@ -978,7 +809,6 @@ sub load_dir_stack
 	}
 	$main::rand_range = $c;
 	print "DEBUG: load_dir_stack: highest result for random select is $c\n" if $DEBUG;
-#	print Dumper(\%main::dir_stack);
 }
 
 sub dir_stack_select
@@ -987,8 +817,6 @@ sub dir_stack_select
 
 	for my $k (sort { $main::dir_stack{$a} <=> $main::dir_stack{$b} } keys(%main::dir_stack))
 	{
-#		print "$k - $main::dir_stack{$k}\n";
-
 		if($r < $main::dir_stack{$k})
 		{
 			#print "$r Selected $k\n";
@@ -1010,7 +838,7 @@ sub load_play_limit
 	{
 		$play_count_limit_tmp = 0;
 		$main::play_count_limit = $1;
-		file_ows($limit_file, '');
+		&save_file($limit_file, '');
 		print "* LIMITING PLAYBACK to $main::play_count_limit files.\n" if  $main::play_count_limit > 0;
 	}
 	else
