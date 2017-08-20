@@ -8,6 +8,8 @@ use Proc::Background;
 
 use misc;
 use rmvars;
+use jhash;
+use config;
 
 use Data::Dumper::Concise;
 use HTTP::Server::Simple::CGI;
@@ -231,7 +233,8 @@ sub r_status
 	my $file = $tmp[0];
 	$file =~ s/^.*(\\|\/)//;
 
-	my @tmp2 = &readf($que_file);
+	my @tmp2 = ();
+	@tmp2 = &readf($que_file) if -f $que_file;
 	my @tmp3 = ();
 
 	for (@tmp2)
@@ -398,7 +401,7 @@ sub r_select2
 	my $c	= 0;
 	my %dh	= ();		# load dir hash from file
 
-	my $ref = &jhash::load($info_file);
+	my $ref = &jhash::load($config::info_file);
 	%info = %$ref if defined $ref;
 
 	@tmp = ();
@@ -433,41 +436,39 @@ sub r_select2
 
 sub r_select
 {
-	my $cgi  = shift;
+	my $cgi	= shift;
+	my $msg	= '';
+	my $c	= 1;
 
-	my $msg = '';
+	my $ref	= &jhash::load($config::info_file);
+	%info	= %$ref if defined $ref;
 
-	my $c = 0;
-	@tmp = readf($tmp_dir_file);
-	for my $file ( sort(@tmp))
+	for my $key (sort {lc $a cmp lc $b} keys %info)
 	{
 		$c++;
 		my %h		= ();
-		$h{c}		= $c;
-		$h{fn}		= $file;
-		$h{file}	= $file;
+		$h{c}		= $c++;
+		$h{fn}		= $key;
+		$h{file}	= $key;
 
 		$msg .= join('', &html_insert_hash($select_form, \%h));
-
 	}
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, $msg);
 }
 
 sub r_browse
 {
-	my $cgi  = shift;
+	my $cgi	 = shift;
+	my $msg	= '';
+	my $c	= 1;
+	my $ref	= &jhash::load($config::info_file);
+	%info	= %$ref if defined $ref;
 
-	my $msg = '';
-
-	my $c = 0;
-	@tmp = readf($tmp_dir_file);
 	for my $key (sort {lc $a cmp lc $b} keys %info)
 	{
-		$c++;
-
 		my %h		= ();
-		$h{c}		= $c;
+		$h{c}		= $c++;
 		$h{fn}		= $key;
 		$h{file}	= $key;
 
@@ -486,13 +487,12 @@ sub r_browse2
 	my $msg	= '';
 	my $c	= 0;
 
-	my $ref = &jhash::load($info_file);
+	my $ref = &jhash::load($config::info_file);
 	%info = %$ref if defined $ref;
 
 	for my $file (sort (@{$info{$dir}{'contents'}}))
 	{
 		$c++;
-		chomp $file;
 		my $fn = $file;
 		$fn =~ s/^.*(\\|\/)(.*?)$/$2/;
 		$fn = &format_fn($2);
@@ -530,7 +530,7 @@ sub r_disable
 
 	my $msg = '';
 
-	my $ref = &jhash::load($info_file);
+	my $ref = &jhash::load($config::info_file);
 	%info = %$ref if defined $ref;
 
 	my $c = 0;
@@ -560,7 +560,7 @@ sub r_enable2
 
 	my $dir = $cgi->param('dir');
 	my $msg = "Enabling '$dir'";
-	my $ref = &jhash::load($info_file);
+	my $ref = &jhash::load($config::info_file);
 	%info	= %$ref if defined $ref;
 
 	&quit("r_enable2: \$config::dirs{$dir} is undef") if ! defined $config::dirs{$dir};
@@ -578,7 +578,7 @@ sub r_enable
 {
 	my $cgi  = shift;
 	my $msg = 're-Enable Directory';
-	my $ref = &jhash::load($info_file);
+	my $ref = &jhash::load($config::info_file);
 	%info	= %$ref if defined $ref;
 
 	my $c = 0;

@@ -2,7 +2,7 @@
 package misc;
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(ci_sort get_home null_file save_file_arr save_file file_append readf readf_clean readsf readsjf is_in_array get_file_info get_file_path get_file_parent_dir get_file_name get_file_ext dir_files);
+@EXPORT = qw(ci_sort get_home null_file save_file_arr save_file file_append readf readf_clean readsf readjf readsjf is_in_array get_file_info get_file_path get_file_parent_dir get_file_name get_file_ext dir_files);
 
 use strict;
 use warnings;
@@ -85,13 +85,9 @@ sub file_append
 
 sub readf
 {
-        my $file = shift;
-
-        if(!-f $file)
-        {
-		print "misc::readf WARNING: file '$file' not found\n";
-		return ();
-        }
+	my $file = shift;
+	&main::quit("ERROR readf: \$file is undef") if ! defined $file;
+	&main::quit("misc::readf WARNING: file '$file' not found\n") if !-f $file;
 
         open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
         my @file = <FILE>;

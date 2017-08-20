@@ -16,7 +16,7 @@ use JSON;
 
 use lib			"$Bin/lib";
 use rmvars;
-# use webuiserver;
+use webuiserver;
 use misc;
 use config;
 use jhash;
@@ -195,8 +195,8 @@ while(1)
 	&history_add($file);
 	&check_keyboard($file);
 	&check_cmds;
-
 	&jhash::save($config::info_file, \%info) if($play_count % 3 == 0);
+	sleep(1);
 }
 &rmp_exit;
 
@@ -350,6 +350,8 @@ sub random_select
 
 sub check_que
 {
+	return '' if !-f $que_file;
+
 	my $play_file			= '';
 	my $mod_time			= (stat($que_file))[9];
 	$mod_time			= 0 if !defined $mod_time; # for windows

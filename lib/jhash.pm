@@ -10,11 +10,9 @@ use JSON;
 sub load
 {
 	my $file = shift;
-	if (!-f $file)
-	{
-		print "load: WARNING '$file' does not exist: $!\n";
-		return undef;
-	}
+
+	die "load: WARNING '$file' does not exist: $!\n" if !-f $file;
+
 	open(FILE, $file)  or die "save: load error reading '$file' $!\n";
 	my @tmp = <FILE>;
 	close(FILE);
@@ -23,7 +21,8 @@ sub load
 
 	return undef if $json_string =~ /^(\n|\s)*$/;
 
-	my $perl_hash_or_arrayref  = decode_json $json_string;
+	my $json = JSON->new->allow_nonref;
+	my $perl_hash_or_arrayref  = $json->decode($json_string);
 
 	return $perl_hash_or_arrayref;
 }
