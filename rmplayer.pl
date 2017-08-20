@@ -11,6 +11,7 @@ use Time::HiRes qw ( time alarm sleep );	# high precision time
 use Scalar::Util qw(looks_like_number);
 use Data::Dumper::Concise;
 use Config::IniHash;
+use Term::ReadKey;
 use JSON;
 
 use lib			"$Bin/lib";
@@ -191,6 +192,10 @@ while(1)
 	die "ERROR: could not find any files\n" if $file eq '';
 
 	&play($file);
+	&history_add($file);
+	&check_keyboard($file);
+
+	&jhash::save($config::info_file, \%info) if($play_count % 3 == 0);
 }
 &rmp_exit;
 
@@ -208,8 +213,63 @@ sub rmp_exit
 	exit;
 }
 
+sub get_keyboard
+{
+	my $key = '';
+	my $timeout = time + 0.3;
+	ReadMode 4;
+	while ($timeout>time && not defined ($key = ReadKey(-1)))
+	{
+		sleep(0.01);	# No key yet
+
+	}
+	ReadMode 0;
+	return $key;
+}
+
+sub check_keyboard
+{
+	my $file = shift;
+	my $key = &get_keyboard;
+	return if ! defined $key || $key eq '';
+	if($key eq 'q')
+	{
+		print "* Got the quit key, quitting :)\n\nThankyou come again.\n\n";
+		&rmp_exit;
+	}
+
+	# check for files to ignore
+	if($key eq 'Q')
+	{
+		print "* Got the ignore key, ignoring $file.\n\n";
+		&update_ignore($file);
+	}
+}
+
 # ---------------------------
 # play file
+
+sub file_parent
+{
+	my $file = shift;
+
+	for my $k(keys %config::dirs)
+	{
+		my @tmp = @{ $info{$k}{contents} };
+		return $k if &is_in_array($file, \@tmp );
+	}
+	&quit("file_parent: unable to find parent for '$file'\n");
+}
+
+sub history_add
+{
+	my $file = shift;
+	my $parent = &file_parent($file);
+
+	push @{ $info{$parent}{history} }, $file;
+	$info{$parent}{history_hash}{$file}	= 1;
+	&trim_history($parent);
+}
 
 sub play
 {
@@ -437,36 +497,25 @@ sub trim_history
 	}
 }
 
-
 sub load_playlist
 {
 	print "LOADING DIRS: ";
 
 	for my $k (keys %config::dirs)
 	{
-		&quit("load_playlist: \$config::dirs{$k}{path} is undef") if ! defined $config::dirs{$k}{path};
-
-		my $d = $config::dirs{$k}{path};
-
-		if(! -d $config::dirs{$k}{path})
-		{
-			print "WARNING: '$k' path '$d' invalid\n";
-			next;
-		}
+		&quit("load_playlist: \$config::dirs{$k}{path} is undef")			if ! defined $config::dirs{$k}{path};
+		&quit("ERROR: dirs.ini invalid path for '$k' - '$config::dirs{$k}{path}'\n")	if !-d $config::dirs{$k}{path};
 		print '.';
 
-		@{ $info{$k}{contents} } = &dir_files($config::dirs{$k}{path});
-		my @tmp = @{ $info{$k}{contents} };
-
-# 		print @tmp;
+		my @tmp = @{ $info{$k}{contents} } = &dir_files($config::dirs{$k}{path});
 
 		# remove ignored files
-		for my $f(@tmp)
+		for my $i(@tmp)
 		{
-			@{ $info{$k}{contents} } = grep { $_ ne $f } @{ $info{$k}{contents} } if defined $ignore_hash{$f};
+			@{ $info{$k}{contents} } = grep { $_ ne $i } @{ $info{$k}{contents} } if defined $ignore_hash{$i};
 		}
 
-		$info{$k}{count}		= scalar(@{ $info{$k}{contents} } );
+		$info{$k}{count} = scalar(@{ $info{$k}{contents} } );
 
 		foreach my $key (keys %{$info{$k}{history_hash}})
 		{
@@ -565,22 +614,6 @@ sub dir_stack_select
 sub reload
 {
 	print "reload STUB\n";
-}
-
-sub get_sub_dirs
-{
-	my $dir = shift;
-	opendir DIR, $dir or return;
-	my @contents = map "$dir/$_", sort grep !/^\.\.?$/, readdir DIR;
-	closedir DIR;
-	for my $c (@contents)
-	{
-		next if !(!-l $c && -d $c);
-	 	&get_sub_dirs($c);
- 		push @main::get_sub_dirs_arr, $c;
-	}
-
-	return @main::get_sub_dirs_arr;
 }
 
 sub quit
