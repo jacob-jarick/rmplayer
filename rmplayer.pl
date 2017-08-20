@@ -28,8 +28,10 @@ our %history_hash	= ();
 our %ignore_hash	= ();
 our %last_modtime	= ();
 our %in_dirs_file	= ();
-
+our %dir_stack		= ();
 our $percent		= 0.90;
+
+our $rand_range		= 1;
 
 my $ascii = q{
 			          o
@@ -195,12 +197,11 @@ while(1)
 sub rmp_exit
 {
 	unlink $lock_file;
-# 	print Dumper(\%dh);
-	kill 9, $server_pid;
+# 	kill 9, $server_pid;
 
 	&jhash::save($dh_file, \%main::dh);
 
-	exit 0;
+	exit;
 }
 
 # ---------------------------
@@ -231,8 +232,9 @@ sub play
 
 	print "* $name\n";
 	&save_file($current_file, $play_file);
-	my $cmd = "$config::app{player_cmd} \"$play_file\" > /dev/null 2>&1";
-	$cmd = "$config::app{player_cmd} \"$play_file\" > NUL" if $windows;
+
+	my $cmd	= "$config::app{player_cmd} \"$play_file\" > /dev/null 2>&1";
+	$cmd	= "$config::app{player_cmd} \"$play_file\" > NUL" if $windows;
 
 	system($cmd);
 }
@@ -480,7 +482,6 @@ sub load_playlist
 		}
 
 		$main::dh{$d}{'count'}		= scalar(@{ $main::dh{$d}{'contents'} } );
-		$main::dh{$d}{'disabled'}	= 0;
 
 		  foreach my $key (keys %{$dh{$d}{'history_hash'}})
 		 {
@@ -489,12 +490,10 @@ sub load_playlist
 		 		print "\n* WARNING: $key has been moved or deleted\n";
 		 		delete $dh{$d}{'history_hash'}{$key};
 		 	}
-		 	if (! is_in_array($key, $dh{$d}{'history'}))
+		 	if (! &is_in_array($key, $dh{$d}{'history'}))
 		 	{
 		 		print "\n* WARNING: $key is in history hash but not in history array. Deleting from history hash\n";
-		 		#exit;
 		 		delete $dh{$d}{'history_hash'}{$key};
-		 		#sleep(1);
 		 	}
 		 }
 
@@ -518,22 +517,26 @@ sub load_playlist
 
 	for my $d (keys %dh)
 	{
-		if(! defined $in_dirs_file{$d})
+		my $found = 0;
+		for my $k(keys %config::dirs)
 		{
-			delete $main::dh{$d};
+			if ($d eq $config::dirs{$k}{path})
+			{
+				$found++;
+				last;
+			}
 		}
+		delete $dh{$d} if !$found;
 	}
 }
 
 sub load_ignore_list
 {
 	# load ignore list
-	my @ignore = &readf($ignore_file);
+	my @ignore = &readf_clean($ignore_file);
 
 	for my $f (@ignore)
 	{
-		chomp $f;
-		next if $f !~ m/\S+/;
 		print "DEBUG: adding '$f' to ignore hash\n" if $DEBUG;
 		$ignore_hash{$f} = 1;
 	}
@@ -541,36 +544,26 @@ sub load_ignore_list
 
 sub load_dir_stack
 {
-	my $c = 0;
-	$main::dir_stack = ();
-	for my $k(keys %dh)
-	{
-		#print "$k - $dh{$k}{'count'}\n";
+	my $c		= 0;
+	%dir_stack	= ();
 
-		if ($main::dh{$k}{'disabled'})
-		{
-			#print "* Disabling $k\n";
-			next;
-			#sleep(10);
-		}
+	for my $k(keys %config::dirs)
+	{
+		next if $config::dirs{$k}{disabled};
 
 		my $nw = $dh{$k}{'count'};
 
-		if(defined $main::wght_hash{$k})
-		{
-			$nw = int($main::wght_hash{$k} * $dh{$k}{'count'});
-			#print "reweighting $k to $nw\n";
-		}
+		$nw = int($config::dirs{$k}{weight} * $dh{$k}{'count'}) if defined $config::dirs{$k}{weight};
 		$c += $nw;
 		$main::dir_stack{$k} = $c;
 	}
-	$main::rand_range = $c;
+	$rand_range = $c;
 	print "DEBUG: load_dir_stack: highest result for random select is $c\n" if $DEBUG;
 }
 
 sub dir_stack_select
 {
-	my $r = int(rand($main::rand_range));
+	my $r = int(rand($rand_range));
 
 	for my $k (sort { $main::dir_stack{$a} <=> $main::dir_stack{$b} } keys(%main::dir_stack))
 	{
