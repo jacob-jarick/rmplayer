@@ -6,20 +6,17 @@ use lib			"$Bin/lib";
 
 use Proc::Background;
 
-use memsubs;
+use misc;
 use rmvars;
 
-use Data::Dumper;
+use Data::Dumper::Concise;
 use HTTP::Server::Simple::CGI;
 use base qw(HTTP::Server::Simple::CGI);
 use CGI::Carp qw(fatalsToBrowser);
 
-use Storable;
-
 use List::Util 'shuffle';
 
 my $script_out_file = "$Bin/script_out.txt";
-
 
 my %dispatch =
 (
@@ -49,7 +46,7 @@ my %dispatch =
 
 # setup dispatch to respond to any html request:
 
-my $links = readjf($::links_file);
+my $links = readjf($links_file);
 
 sub handle_request
 {
@@ -82,20 +79,12 @@ sub handle_request
 
 			my $result = '';
 
-			# OLD SCRIPT EXEC METHOD - Causes WEBui to hang
-#			open SCRIPT, "$scripts_dir/$path_tmp |"   or die "Couldn't execute script '$scripts_dir/$path_tmp': $!";
-#			while ( defined( my $line = <SCRIPT> )  )
-#			{
-#				$result .= $line;
-#			}
-#			close SCRIPT;
-
 			# NEW METHOD - need to output results to a log file.
 			my $proc = Proc::Background->new("$scripts_dir/$path_tmp > $script_out_file");
 
 			print "HTTP/1.0 200 OK\r\n";
 			print	$cgi->header,
-				&html_insert($::index_html, "$path_tmp running", "/script_out", 1),
+				&html_insert($index_html, "$path_tmp running", "/script_out", 1),
 				$cgi->end_html;
 		}
 		else
@@ -118,7 +107,7 @@ sub r_exit
 	system($main::kill_cmd);
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "Exiting");
+	print &html_insert($index_html, "Exiting");
 }
 
 sub r_stop
@@ -131,7 +120,7 @@ sub r_stop
 	system($main::kill_cmd);
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "STOPPING", '/stopped');
+	print &html_insert($index_html, "STOPPING", '/stopped');
 }
 
 sub r_reload
@@ -142,7 +131,7 @@ sub r_reload
 	file_append( $main::cmd_file, "RELOAD");	# append to quefile for cmd
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "RELOADING PLAYLIST", '/');
+	print &html_insert($index_html, "RELOADING PLAYLIST", '/');
 }
 
 sub r_stopped
@@ -151,7 +140,7 @@ sub r_stopped
 	return if !ref $cgi;
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "STOPPED");
+	print &html_insert($index_html, "STOPPED");
 }
 
 sub r_play
@@ -162,19 +151,18 @@ sub r_play
 	file_append( $main::cmd_file, "PLAY");	# append to quefile for cmd
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "Resuming Playback", '/');
+	print &html_insert($index_html, "Resuming Playback", '/');
 }
 
 sub r_script_out
 {
 	my $cgi  = shift;
 	return if !ref $cgi;
-	
+
 	my $tmp = readjf($script_out_file);
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "<PRE>$tmp</PRE>", '/scripts', 2.5);
-
+	print &html_insert($index_html, "<PRE>$tmp</PRE>", '/scripts', 2.5);
 }
 
 sub r_next
@@ -187,12 +175,12 @@ sub r_next
 	system($main::kill_cmd);
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "skipping to next file", '/');
+	print &html_insert($index_html, "skipping to next file", '/');
 }
 
 sub r_limit
 {
-	my $cgi  = shift;
+	my $cgi = shift;
 	return if !ref $cgi;
 
 	open(FILE, ">/tmp/dump") or die;
@@ -207,21 +195,16 @@ sub r_limit
 	}
 	else
 	{
-		print &html_insert($::index_html, "'$limit' is not a number doofus.\n", '/');
+		print &html_insert($index_html, "'$limit' is not a number doofus.\n", '/');
 		return;
 	}
 
-	my @tmp = readf( $main::current_file);
-	#file_append( $main::ignore_file, $tmp[0]);
+	my @tmp = readf( $current_file);
 
-	file_ows( $limit_file, $limit);
-	#file_ows( $limit_file, 10);
-	#sleep(10);
-	file_append( $cmd_file, "RELOAD");
+	&file_append($cmd_file, "LIMIT=$limit");
 
- 	print	$cgi->header;
-	#print &html_insert($::index_html, "Limited playback to $limit files.\n", '/');
-	print &html_insert($::index_html, "Limited playback to $limit files.\n");
+ 	print $cgi->header;
+	print &html_insert($index_html, "Limited playback to $limit files.\n");
 }
 
 sub r_ignore
@@ -229,15 +212,14 @@ sub r_ignore
 	my $cgi  = shift;
 	return if !ref $cgi;
 
-	my @tmp = readf( $main::current_file);
-	#file_append( $main::ignore_file, $tmp[0]);
+	my @tmp = &readf($current_file);
 
 	file_append( $cmd_file, "IGNORE\t" . $tmp[0]);
 
-	system($main::kill_cmd);
+	system($config::app{main}{kill_cmd});
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "Added '$tmp[0]' to ignore list.", '/');
+	print &html_insert($index_html, "Added '$tmp[0]' to ignore list.", '/');
 }
 
 sub r_status
@@ -245,13 +227,13 @@ sub r_status
 	my $cgi  = shift;
 	return if !ref $cgi;
 
-	my @tmp = readf( $main::current_file);
+	my @tmp = readf( $current_file);
 	my $file = $tmp[0];
 	$file =~ s/^.*(\\|\/)//;
-	
-	my @tmp2 = &readf($::que_file);
+
+	my @tmp2 = &readf($que_file);
 	my @tmp3 = ();
-	
+
 	for (@tmp2)
 	{
 		s/^.*(\\|\/)//;
@@ -260,14 +242,14 @@ sub r_status
 		s/\n+//g;
 		push @tmp3, $_ if $_ ne '';
 	}
-	
-	
+
+
 	$que_string = join("<BR>\n", @tmp3);
-	
+
 	$que_string = "<HR>QUEUED<BR>$que_string" if $que_string ne '' && $que_string =~ /\w/i;
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "Currently Playing:<br>$file$que_string");
+	print &html_insert($index_html, "Currently Playing:<br>$file$que_string");
 
 }
 
@@ -278,20 +260,18 @@ sub r_que
 
 	my $file = $cgi->param('file');
 
-	file_append($main::que_file, $file);
+	&file_append($que_file, $file);
 
  	print	$cgi->header;
-	print &html_insert($::index_html, "Queing $file", '/');
+	print &html_insert($index_html, "Queing $file", '/');
 }
 
 sub r_history
 {
-	my $cgi  = shift;
-
-	my $msg = '';
-
-	my $c = 0;
-	@tmp = readf( $main::history_file);
+	my $cgi	= shift;
+	my $msg	= '';
+	my $c	= 0;
+	@tmp	= &readf($history_file);
 
 	if(scalar(@tmp) > 30)
 	{
@@ -307,19 +287,19 @@ sub r_history
 		next if ! defined $file || !$file;
 		chomp $file;
 		next if $file !~ /\S+/;
-		my $fn = $file;
-		$fn =~ s/^.*(\\|\/)(.*?)$/$2/;
-		$fn = &format_fn($2);
+		my $fn		= $file;
+		$fn		=~ s/^.*(\\|\/)(.*?)$/$2/;
+		$fn		= &format_fn($2);
 
-		my %h = ();
-		$h{'c'} = $c;
-		$h{'fn'} = $fn;
-		$h{'file'} = $file;
+		my %h		= ();
+		$h{c}		= $c;
+		$h{fn}		= $fn;
+		$h{file}	= $file;
 
-		$msg .= join('', &html_insert_hash($::queue_form, \%h));
+		$msg .= join('', &html_insert_hash($queue_form, \%h));
 	}
- 	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+ 	print $cgi->header;
+	print &html_insert($index_html, $msg);
 }
 
 sub html_insert_hash
@@ -332,7 +312,7 @@ sub html_insert_hash
 
 	for my $line (@html)
 	{
-		$line =~ s/\[version\]/$::version/ig;
+		$line =~ s/\[version\]/$version/ig;
 
 		for my $k (keys %h)
 		{
@@ -345,10 +325,9 @@ sub html_insert_hash
 
 sub html_insert
 {
-	my $file = shift;
-	my $msg = shift;
-	my @html = readf($file);
-
+	my $file	= shift;
+	my $msg		= shift;
+	my @html	= readf($file);
 
 	my $redirect = shift;
 	if(!defined $redirect)
@@ -373,7 +352,7 @@ sub html_insert
 	{
 		$line =~ s/\[msg\]/$msg/ig;
 		$line =~ s/\[redirect\]/$redirect/ig;
-		$line =~ s/\[version\]/$::version/ig;
+		$line =~ s/\[version\]/$version/ig;
 		push @tmp, $line;
 	}
 	return @tmp;
@@ -381,11 +360,10 @@ sub html_insert
 
 sub r_scripts
 {
-	my $cgi  = shift;
+	my $cgi	= shift;
+	my $msg	= '';
 
-	my $msg = '';
-
-	opendir(DIR, "$::scripts_dir") or die "ERROR: r_scripts: couldn't opendir '$::scripts_dir' to read.\n";
+	opendir(DIR, $scripts_dir) or die "ERROR: r_scripts: couldn't opendir '$scripts_dir' to read.\n";
 	my @dir_list = sort(readdir(DIR));
 	closedir DIR;
 
@@ -405,66 +383,51 @@ sub r_scripts
 		";
 	}
  	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+	print &html_insert($index_html, $msg);
 }
 
 
 sub r_select2
 {
-	my $cgi  = shift;
+	my $cgi 	= shift;
+
 	return if !ref $cgi;
 
-	my $dir = $cgi->param('dir');
+	my $dir	= $cgi->param('dir');
+	my $msg	= '';
+	my $c	= 0;
+	my %dh	= ();		# load dir hash from file
 
-	my $msg = '';
-
-	my $c = 0;
-
-	my %dh = ();		# load dir hash from file
-	if( -f $dh_file)
-	{
-		my $ref = retrieve($dh_file);
-		%dh = %$ref;
-	}
+	my $ref = &jhash::load($info_file);
+	%info = %$ref if defined $ref;
 
 	@tmp = ();
 
-	for my $f ( @{$dh{$dir}{'contents'}} )
+	for my $f ( @{$info{$dir}{'contents'}} )
 	{
-		next if defined $dh{$dir}{'history_hash'}{$f};
+		next if defined $info{$dir}{'history_hash'}{$f};
 		push @tmp, $f;
 	}
 
 	@tmp = shuffle(@tmp);
-
 	@tmp = @tmp[0 .. 24] if(scalar(@tmp) > 25);
 
 	for my $file (@tmp)
 	{
 		$c++;
-		chomp $file;
-		my $fn = $file;
-		$fn =~ s/^.*(\\|\/)(.*?)$/$2/;
-		$fn = &format_fn($2);
+		my $fn		= $file;
+		$fn		=~ s/^.*(\\|\/)(.*?)$/$2/;
+		$fn		= &format_fn($2);
 
-		my %h = ();
-		$h{'c'} = $c;
-		$h{'fn'} = $fn;
-		$h{'file'} = $file;
+		my %h		= ();
+		$h{c}		= $c;
+		$h{fn}		= $fn;
+		$h{file}	= $file;
 
-		$msg .= join('', &html_insert_hash($::queue_form, \%h));
-
-# 		$msg .="
-# 		<FORM name=\'f$c\' action='/que' method='post'>
-# 		<INPUT type='hidden' name='file' value=\"$file\">
-# 		<a href=\"javascript:;\"onclick=\"document.forms.f$c.submit();\">
-# 		<div><h2 class='button'>$fn</h2></div>
-# 		</a>
-# 		</FORM>
-# 		";
+		$msg .= join('', &html_insert_hash($queue_form, \%h));
 	}
  	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+	print &html_insert($index_html, $msg);
 }
 
 
@@ -479,19 +442,16 @@ sub r_select
 	for my $file ( sort(@tmp))
 	{
 		$c++;
-		chomp $file;
-		my $fn = $file;
+		my %h		= ();
+		$h{c}		= $c;
+		$h{fn}		= $file;
+		$h{file}	= $file;
 
-		my %h = ();
-		$h{'c'} = $c;
-		$h{'fn'} = $fn;
-		$h{'file'} = $file;
-
-		$msg .= join('', &html_insert_hash($::select_form, \%h));
+		$msg .= join('', &html_insert_hash($select_form, \%h));
 
 	}
  	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+	print &html_insert($index_html, $msg);
 }
 
 sub r_browse
@@ -502,46 +462,34 @@ sub r_browse
 
 	my $c = 0;
 	@tmp = readf($tmp_dir_file);
-	for my $file ( sort(@tmp))
+	for my $key (sort {lc $a cmp lc $b} keys %info)
 	{
 		$c++;
-		chomp $file;
-		my $fn = $file;
 
-		my %h = ();
-		$h{'c'} = $c;
-		$h{'fn'} = $fn;
-		$h{'file'} = $file;
+		my %h		= ();
+		$h{c}		= $c;
+		$h{fn}		= $key;
+		$h{file}	= $key;
 
-		$msg .= join('', &html_insert_hash($::browse_form, \%h));
-
-
+		$msg .= join('', &html_insert_hash($browse_form, \%h));
 	}
- 	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+ 	print $cgi->header;
+	print &html_insert($index_html, $msg);
 }
 
 sub r_browse2
 {
-	my $cgi  = shift;
+	my $cgi = shift;
 	return if !ref $cgi;
 
-	my $dir = $cgi->param('dir');
+	my $dir	= $cgi->param('dir');
+	my $msg	= '';
+	my $c	= 0;
 
-	my $msg = '';
+	my $ref = &jhash::load($info_file);
+	%info = %$ref if defined $ref;
 
-	my $c = 0;
-
-	my %dh = ();		# load dir hash from file
-	if( -f $dh_file)
-	{
-		my $ref = retrieve($dh_file);
-		%dh = %$ref;
-	}
-
-	@tmp = sort (@{$dh{$dir}{'contents'}});
-
-	for my $file (@tmp)
+	for my $file (sort (@{$info{$dir}{'contents'}}))
 	{
 		$c++;
 		chomp $file;
@@ -549,16 +497,16 @@ sub r_browse2
 		$fn =~ s/^.*(\\|\/)(.*?)$/$2/;
 		$fn = &format_fn($2);
 
-		my %h = ();
-		$h{'c'} = $c;
-		$h{'fn'} = $fn;
-		$h{'file'} = $file;
+		my %h		= ();
+		$h{c}		= $c;
+		$h{fn}		= $fn;
+		$h{file}	= $file;
 
-		$msg .= join('', &html_insert_hash($::queue_form, \%h));
+		$msg .= join('', &html_insert_hash($queue_form, \%h));
 
 	}
  	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+	print &html_insert($index_html, $msg);
 }
 
 sub r_disable2
@@ -570,11 +518,10 @@ sub r_disable2
 
 	my $msg = "Disabling '$dir'";
 
-	file_append($disable_file, $dir);
-	file_append($cmd_file, "RELOAD\tDisabling $dir");
+	&misc::file_append($cmd_file, "RELOAD\tDisabling $dir");
 
- 	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+ 	print $cgi->header;
+	print &html_insert($index_html, $msg);
 }
 
 sub r_disable
@@ -583,105 +530,83 @@ sub r_disable
 
 	my $msg = '';
 
-	my %dh = ();		# load dir hash from file
-	if( -f $dh_file)
-	{
-		my $ref = retrieve($dh_file);
-		%dh = %$ref;
-	}
-
-
+	my $ref = &jhash::load($info_file);
+	%info = %$ref if defined $ref;
 
 	my $c = 0;
-	@tmp = readf($tmp_dir_file);
-	for my $file ( sort(@tmp))
+	for my $key (keys %info)
 	{
 		$c++;
 		chomp $file;
 
-		next if $dh{$file}{'disabled'};
+		next if !$config::dirs{$key}{enabled};
 
-		my $fn = $file;
+		my %h		= ();
+		$h{c}		= $c;
+		$h{fn}		= $file;
+		$h{file}	= $file;
 
-		my %h = ();
-		$h{'c'} = $c;
-		$h{'fn'} = $fn;
-		$h{'file'} = $file;
-
-		$msg .= join('', &html_insert_hash($::disable_form, \%h));
+		$msg .= join('', &html_insert_hash($disable_form, \%h));
 
 	}
  	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+	print &html_insert($index_html, $msg);
 }
 
 sub r_enable2
 {
-	my $cgi  = shift;
+	my $cgi = shift;
 	return if !ref $cgi;
 
 	my $dir = $cgi->param('dir');
-
 	my $msg = "Enabling '$dir'";
+	my $ref = &jhash::load($info_file);
+	%info	= %$ref if defined $ref;
 
-	my @tmp = readf($disable_file);
-	file_ows($disable_file);
-	for my $d(@tmp)
-	{
-		chomp $d;
-		next if $dir eq $d || !$d;
-		file_append($disable_file, $d);
-	}
+	&quit("r_enable2: \$config::dirs{$dir} is undef") if ! defined $config::dirs{$dir};
+
+	$config::dirs{$dir}{enable} = 1;
+	&config::save;
+
 	file_append($cmd_file, "RELOAD\tre-Enabling $dir");
 
  	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+	print &html_insert($index_html, $msg);
 }
 
 sub r_enable
 {
 	my $cgi  = shift;
-
 	my $msg = 're-Enable Directory';
-
-	my %dh = ();		# load dir hash from file
-	if( -f $dh_file)
-	{
-		my $ref = retrieve($dh_file);
-		%dh = %$ref;
-	}
-
-
+	my $ref = &jhash::load($info_file);
+	%info	= %$ref if defined $ref;
 
 	my $c = 0;
-	@tmp = readf($disable_file);
-	for my $file ( sort(@tmp))
+	for my $key (keys %info)
 	{
 		$c++;
 		chomp $file;
 
-		next if $dh{$file}{'disable'};
+		next if $info{$file}{enabled};
 
-		my $fn = $file;
+		my %h		= ();
+		$h{c}		= $c;
+		$h{fn}		= $file;
+		$h{file}	= $file;
 
-		my %h = ();
-		$h{'c'} = $c;
-		$h{'fn'} = $fn;
-		$h{'file'} = $file;
-
-		$msg .= join('', &html_insert_hash($::enable_form, \%h));
+		$msg .= join('', &html_insert_hash($enable_form, \%h));
 	}
  	print	$cgi->header;
-	print &html_insert($::index_html, $msg);
+	print &html_insert($index_html, $msg);
 }
 
 
 sub format_fn
 {
-	my $f = shift;
-	$f =~ /^(.+)\.(.+?)$/;
-	my $name = $1;
-	my $ext = $2;
+	my $f		= shift;
+	$f		=~ /^(.+)\.(.+?)$/;
+	my $name	= $1;
+	my $ext		= $2;
 
 	$name =~ s/(\.|_)/ /g;
 	$ext = lc($ext);

@@ -115,8 +115,8 @@ my $first_load = 1;
 
 # start webserver
 
-our $server_pid = 0;
-# $server_pid = webuiserver->new(8080)->background();
+our $server_pid		= 0;
+$server_pid		= webuiserver->new(8080)->background();
 
 # =============================================================================
 # Print start message
@@ -194,6 +194,7 @@ while(1)
 	&play($file);
 	&history_add($file);
 	&check_keyboard($file);
+	&check_cmds;
 
 	&jhash::save($config::info_file, \%info) if($play_count % 3 == 0);
 }
@@ -589,7 +590,7 @@ sub load_dir_stack
 
 		my $nw = $info{$k}{count};
 
-		$nw = int($config::dirs{$k}{weight} * $info{$k}{count});
+		$nw = int( ($config::dirs{$k}{weight}/100) * $info{$k}{count});
 		$c += $nw;
 		$dir_stack{$k} = $c;
 	}

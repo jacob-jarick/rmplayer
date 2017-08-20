@@ -70,6 +70,9 @@ sub load
 			$dirs{$k}{$k2}	= $dir_defaults{$k2};
 			$dirs{$k}{$k2} = $hash{$k}{$k2} if defined $hash{$k}{$k2};
 		}
+		$dirs{$k}{weight} = 100	if $dirs{$k}{weight} !~ /^\d+$/;
+		$dirs{$k}{weight} = 100	if $dirs{$k}{weight} > 100;
+		$dirs{$k}{weight} = 1	if $dirs{$k}{weight} < 1;
 	}
 }
 
