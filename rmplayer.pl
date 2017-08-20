@@ -18,6 +18,7 @@ use rmvars;
 # use webuiserver;
 use misc;
 use config;
+use jhash;
 
 # =============================================================================
 # Vars
@@ -63,7 +64,7 @@ my $help_txt = "Run and access web ui from http://localhost:8080\n";
 our %dh = ();
 {
 	my $ref = &jhash::load($info_file);
-	%dh = %$ref;
+	%dh = %$ref if defined $ref;
 }
 
 # =============================================================================
@@ -103,7 +104,7 @@ if(-f $lock_file)	# check if there is already a lockfile
 }
 
 # create lock file
-&file_save($lock_file, $$);
+&save_file($lock_file, $$);
 
 # =============================================================================
 
@@ -134,8 +135,8 @@ print
 *
 * Daemon PID:		$$
 *
-* Player cmd:		$config::app{player_cmd}
-* Kill Player cmd:	$config::app{kill_cmd}
+* Player cmd:		$config::app{main}{player_cmd}
+* Kill Player cmd:	$config::app{main}{kill_cmd}
 *
 **=============================================================**
 $ascii
@@ -151,8 +152,6 @@ our $STOP			= 0;
 
 while(1)
 {
-	my $play_file = '';
-
 	#----------------------------------------------
 	# stop check
 
@@ -181,10 +180,11 @@ while(1)
 	# --------------------------------------------
 	# queue or randomly select play file
 
-	$play_file = &check_que;
-	$play_file = &random_select if($play_file eq '');
+	my $file = '';
+	$file = &check_que;
+	$file = &random_select if($file eq '');
 
-	&play($play_file);
+	&play($file);
 }
 &rmp_exit;
 
@@ -290,29 +290,22 @@ sub random_select
 
 sub check_que
 {
-	my $play_file = '';
-	my $mod_time = (stat($que_file))[9];
-	$mod_time = 0 if !defined $mod_time; # for windows
-	$last_modtime{$que_file} = 0 if ! defined $last_modtime{$que_file};
-	return if $mod_time == $last_modtime{$que_file};
+	my $play_file			= '';
+	my $mod_time			= (stat($que_file))[9];
+	$mod_time			= 0 if !defined $mod_time; # for windows
+	$last_modtime{$que_file}	= 0 if ! defined $last_modtime{$que_file};
+
+	return '' if $mod_time == $last_modtime{$que_file};
+
 	$last_modtime{$que_file} = $mod_time;
 
-	my @tmp = &readf($que_file);
-	my $que = "";
-	my $a = "";
+	my @tmp	= &readf($que_file);
+	my $que	= '';
+	my $a	= '';
 
-	while(!$que && @tmp)
-	{
-		$a = shift @tmp;
-		chomp $a;
-		if($a)
-		{
-			$que = $a;
-			last;
-		}
-	}
+	$que = $tmp[0] if defined $tmp[0];
 
-	if($que)
+	if($que ne '')
 	{
 		# check if its a user qued file
 		if(!-f $que)

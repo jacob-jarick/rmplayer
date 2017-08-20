@@ -7,8 +7,8 @@ use warnings;
 
 use Config::IniHash;
 
-my %app		= ();
-my %dirs	= ();
+our %app			= ();
+our %dirs			= ();
 
 # set application defaults
 $app{main}{play_count_limit}	= 0;
@@ -51,8 +51,13 @@ sub load
 			}
 		}
 	}
+	else
+	{
+		print "creating '$config_file'\n";
+		WriteINI ($config_file, \%app);
+	}
 
-	die "dirs file not found" if ! -f $dirs_file;
+	die "dirs file '$dirs_file' not found" if ! -f $dirs_file;
 	my $ini	= ReadINI $dirs_file;
 	my %hash	= %{$ini};
 
