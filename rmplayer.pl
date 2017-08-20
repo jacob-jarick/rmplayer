@@ -29,6 +29,7 @@ our %ignore_hash	= ();
 our %last_modtime	= ();
 our %in_dirs_file	= ();
 our %dir_stack		= ();
+our %info		= ();
 our $percent		= 0.90;
 
 our $rand_range		= 1;
@@ -63,10 +64,9 @@ my $help_txt = "Run and access web ui from http://localhost:8080\n";
 
 &config::load;
 
-our %dh = ();
 {
 	my $ref = &jhash::load($info_file);
-	%dh = %$ref if defined $ref;
+	%info = %$ref if defined $ref;
 }
 
 # =============================================================================
@@ -86,21 +86,20 @@ if(-f $lock_file)	# check if there is already a lockfile
 
 	if(!$exists)
 	{
-		print	"\n\n\n\n\n",
+		print	"n",
 		"*******************************************************************************\n",
 		"* stale lockfile $lock_file removed. *\n",
-		"*******************************************************************************\n\n\n\n\n\n";
+		"*******************************************************************************\n\n";
 		unlink $lock_file;
 	}
 	else
 	{
-		print	"\n\n\n\n\n",
+		print	"\n",
 		"*******************************************************************************\n",
 		"* lockfile $lock_file exists. EXITING *\n",
-		"*******************************************************************************\n\n\n\n\n\n";
+		"*******************************************************************************\n\n";
 
-		print	"* bye o/\n\n\n";
-		sleep(1);
+		print	"* bye o/\n";
 		exit;
 	}
 }
@@ -109,8 +108,6 @@ if(-f $lock_file)	# check if there is already a lockfile
 &save_file($lock_file, $$);
 
 # =============================================================================
-
-# load %dh if file exists.
 
 my $first_load = 1;
 &reload;
@@ -143,6 +140,11 @@ print
 **=============================================================**
 $ascii
 ";
+
+&load_playlist;
+&load_dir_stack;
+&jhash::save($config::info_file, \%info);
+# print Dumper(\%info);
 
 # =============================================================================
 # Main Loop
@@ -186,6 +188,8 @@ while(1)
 	$file = &check_que;
 	$file = &random_select if($file eq '');
 
+	die "ERROR: could not find any files\n" if $file eq '';
+
 	&play($file);
 }
 &rmp_exit;
@@ -199,7 +203,7 @@ sub rmp_exit
 	unlink $lock_file;
 # 	kill 9, $server_pid;
 
-	&jhash::save($dh_file, \%main::dh);
+	&jhash::save($config::info_file, \%info);
 
 	exit;
 }
@@ -210,7 +214,7 @@ sub rmp_exit
 sub play
 {
 	my $play_file = shift;
-	if (! $play_file)
+	if (! defined $play_file)
 	{
 		print "ERROR: play: \$play_file is undef\n";
 		&rmp_exit;
@@ -233,8 +237,8 @@ sub play
 	print "* $name\n";
 	&save_file($current_file, $play_file);
 
-	my $cmd	= "$config::app{player_cmd} \"$play_file\" > /dev/null 2>&1";
-	$cmd	= "$config::app{player_cmd} \"$play_file\" > NUL" if $windows;
+	my $cmd	= "$config::app{main}{player_cmd} \"$play_file\" > /dev/null 2>&1";
+	$cmd	= "$config::app{main}{player_cmd} \"$play_file\" > NUL" if lc $^O eq 'mswin32';
 
 	system($cmd);
 }
@@ -246,44 +250,37 @@ sub random_select
 	my $rand	= 0;
 	my $play_file	= '';
 
-	for my $f (@{$main::dh{$d}{'contents'}})
+	for my $f (@{$info{$d}{contents}})
 	{
-		next if defined $main::dh{$d}{$f};
+		next if defined $info{$d}{$f};
 		push @tmp, $f;
 	}
 
 	my @tmp2 = @tmp;
 	@tmp = ();
 
-	if (defined $main::dh{$d}{'history'} && scalar @{$main::dh{$d}{'history'}} >= $main::dh{$d}{'count'})
+	if (defined $info{$d}{history} && scalar @{$info{$d}{history}} >= $info{$d}{count})
 	{
 		print "WARNING: unexpected need to trim history for '$d' possible reasons are files have been moved/deleted or rmplayer error.\n";
 		&trim_history($d);
-		#exit;
 	}
 
-	my $w = 0;
 	for my $f(@tmp2)
 	{
-		if ( defined $dh{$d}{'history_hash'}{$f})
-		{
-			#print "found '$f' in history, removing\n";
-			next;
-		}
-		#print "Added $f to selection\n";
+		next if ( defined $info{$d}{history_hash}{$f});
 		push @tmp, $f;
 	}
 
 	my $list_count = @tmp;
 	$rand = int(rand($list_count));
-	$play_file = $tmp[$rand];
+	$play_file = $tmp[$rand] if defined $tmp[$rand];
 
-	if(!$play_file)
+	if(! defined $play_file || $play_file eq '')
 	{
 		print "ERROR: random_select: failed to select a file from '$d',  \$play_file is undef, Array count: $list_count, dumping selection array\n";
 		print Dumper(\@tmp);
+		exit;
 	}
-
 
 	return $play_file;
 }
@@ -327,25 +324,19 @@ sub check_que
 
 sub check_cmds
 {
-	my $mod_time = (stat($cmd_file))[9];
-	$mod_time = 0 if !defined $mod_time; # for windows
-	$last_modtime{$cmd_file} = 0 if ! defined $last_modtime{$cmd_file};
+	my $mod_time		= (stat($cmd_file))[9];
+	$mod_time		= 0 if !defined $mod_time; # for windows
+	$last_modtime{$cmd_file}= 0 if ! defined $last_modtime{$cmd_file};
+
 	return if $mod_time == $last_modtime{$cmd_file};
+
 	$last_modtime{$cmd_file} = $mod_time;
 
-	my @tmp = &readf($cmd_file);
-	my $que = "";
-	my $a = "";
-	my $loop = 1;
-
-	#print "tmp =  @tmp";
-
-	my $got_exit = 0;
+	my @tmp		= &readf($cmd_file);
 
 	for my $cmd (@tmp)
 	{
-		chomp $cmd;
-		next if !$cmd || $cmd eq '';
+		next if $cmd eq '' || $cmd =~ /^(\s|\n|\r)*$/;
 		if($cmd =~ /^STOP/)
 		{
 			$STOP = 1;
@@ -381,8 +372,8 @@ sub check_cmds
 		elsif($cmd =~ /^EXIT/)
 		{
 			print "*\n* Exit requested.\n";
-
-			$got_exit = 1;
+			&null_file($cmd_file);
+			&rmp_exit;
 		}
 		else
 		{
@@ -391,7 +382,6 @@ sub check_cmds
 
 	}
 	&null_file($cmd_file);	# zero file
-	&rmp_exit if $got_exit;
 }
 
 sub update_ignore
@@ -408,8 +398,6 @@ sub update_ignore
 	&file_append($ignore_file, $file);
 }
 
-
-
 # ---------------------------------------------------
 # check to see if we need to trim dirs history
 
@@ -418,23 +406,23 @@ sub trim_history
 	my $dir = shift;
 
 	my $history_length = 0;
-	   $history_length = scalar(@{$dh{$dir}{'history'}}) if defined $dh{$dir}{'history'};
+	   $history_length = scalar(@{$info{$dir}{history}}) if defined $info{$dir}{history};
 
-	my $percent_played = $history_length / $dh{$dir}{'count'};
+	my $percent_played = $history_length / $info{$dir}{count};
 
 	if
 	(
 		$percent_played > $main::percent ||
-		$history_length >= ($dh{$dir}{'count'} - 2)		# sometimes a dir has a tiny amount of files (eg 6) resulting in history not being trimmed with 5 out of 6 being played as % played is only ~83%
+		$history_length >= ($info{$dir}{count} - 2)		# sometimes a dir has a tiny amount of files (eg 6) resulting in history not being trimmed with 5 out of 6 being played as % played is only ~83%
 	)
 	{
 		# deduct a random percentage between 1-$bump% (stops it trimming constantly)
 		my $bump = 5;
 		# if dir has small amount of files increase bump size.
-		$bump = 10 if $dh{$dir}{'count'} < 100;
+		$bump = 10 if $info{$dir}{count} < 100;
 
 		my $c = (1+rand($bump)) / 100;
-		my $trim_n = int((1-($percent-$c)) * $dh{$dir}{'count'});	# get amount of files to trim
+		my $trim_n = int((1-($percent-$c)) * $info{$dir}{count});	# get amount of files to trim
 		$trim_n = 2 if $trim_n <= 1;	# always trim at least 2 files
 
 		print "DEBUG: Trimming History for '$dir', removing $trim_n entrys.\n" if $DEBUG;
@@ -442,97 +430,93 @@ sub trim_history
 		$c = 0;
 		while($c <= $trim_n)
 		{
-			my $f = shift(@{$dh{$dir}{'history'}});	# remove an entry from the front of array
-			delete $dh{$dir}{'history_hash'}{$f}; #if ! is_in_array($f, $dh{$dir}{'history'});		# delete shifted array value history hash IF it is not still in the array (dupes occur due to user queuing)
+			my $f = shift(@{$info{$dir}{history}});	# remove an entry from the front of array
+			delete $info{$dir}{history_hash}{$f} if defined $info{$dir}{history_hash}{$f};
 			$c++;
 		}
 	}
-	#store \%main::dh, $dh_file;# if $SYNC;
 }
 
 
 sub load_playlist
 {
-	my @dirs2 = ();
 	print "LOADING DIRS: ";
 
 	for my $k (keys %config::dirs)
 	{
+		&quit("load_playlist: \$config::dirs{$k}{path} is undef") if ! defined $config::dirs{$k}{path};
+
 		my $d = $config::dirs{$k}{path};
 
-		if ($config::dirs{$k}{recursive})
-		{
-			print "load_playlist: STUB: load recursive\n";
-		}
 		if(! -d $config::dirs{$k}{path})
 		{
-			print "WARNING: '$k' path '$config::dirs{$k}{path}' invalid\n";
+			print "WARNING: '$k' path '$d' invalid\n";
 			next;
 		}
 		print '.';
-		$in_dirs_file{$d} = 1; # remember which directories are defined
 
-		@{ $main::dh{$d}{'contents'} } = &dir_files($d);
-		my @tmp = @{ $main::dh{$d}{'contents'} };
+		@{ $info{$k}{contents} } = &dir_files($config::dirs{$k}{path});
+		my @tmp = @{ $info{$k}{contents} };
+
+# 		print @tmp;
 
 		# remove ignored files
 		for my $f(@tmp)
 		{
-			@{ $main::dh{$d}{'contents'} } = grep { $_ ne $f } @{ $main::dh{$d}{'contents'} } if defined $ignore_hash{$f};
+			@{ $info{$k}{contents} } = grep { $_ ne $f } @{ $info{$k}{contents} } if defined $ignore_hash{$f};
 		}
 
-		$main::dh{$d}{'count'}		= scalar(@{ $main::dh{$d}{'contents'} } );
+		$info{$k}{count}		= scalar(@{ $info{$k}{contents} } );
 
-		  foreach my $key (keys %{$dh{$d}{'history_hash'}})
-		 {
-		 	if (! -f $key)
-		 	{
-		 		print "\n* WARNING: $key has been moved or deleted\n";
-		 		delete $dh{$d}{'history_hash'}{$key};
-		 	}
-		 	if (! &is_in_array($key, $dh{$d}{'history'}))
-		 	{
-		 		print "\n* WARNING: $key is in history hash but not in history array. Deleting from history hash\n";
-		 		delete $dh{$d}{'history_hash'}{$key};
-		 	}
-		 }
+		foreach my $key (keys %{$info{$k}{history_hash}})
+		{
+			if (! -f $key)
+			{
+				print "\n* WARNING: $key has been moved or deleted\n";
+				delete $info{$k}{history_hash}{$key};
+			}
+			if (! &is_in_array($key, $info{$k}{history}))
+			{
+				print "\n* WARNING: $key is in history hash but not in history array. Deleting from history hash\n";
+				delete $info{$k}{history_hash}{$key};
+			}
+		}
 
 		@tmp = ();
-		for my $key (@{$dh{$d}{'history'}})
+		for my $key (@{$info{$k}{history}})
 		{
-			if(!defined $dh{$d}{'history_hash'}{$key})
+			if(!defined $info{$k}{history_hash}{$key})
 			{
 				print "\n* WARNING: $key is in history array but not in history hash. Deleting from history array\n";
 				next;
 			}
 			push @tmp, $key;
 		}
-		@{$dh{$d}{'history'}} = @tmp;
+		@{$info{$k}{history}} = @tmp;
 
-		&trim_history($d); # trim history on playlist load
+ 		&trim_history($k); # trim history on playlist load
 	}
+
 	print " done.\n";
 
 	# now cleanup the hash file
-
-	for my $d (keys %dh)
+	for my $key (keys %info)
 	{
 		my $found = 0;
-		for my $k(keys %config::dirs)
+		for my $k2(keys %config::dirs)
 		{
-			if ($d eq $config::dirs{$k}{path})
+			if ($key eq $k2)
 			{
 				$found++;
 				last;
 			}
 		}
-		delete $dh{$d} if !$found;
+		delete $info{$key} if !$found;
 	}
 }
 
 sub load_ignore_list
 {
-	# load ignore list
 	my @ignore = &readf_clean($ignore_file);
 
 	for my $f (@ignore)
@@ -551,11 +535,14 @@ sub load_dir_stack
 	{
 		next if $config::dirs{$k}{disabled};
 
-		my $nw = $dh{$k}{'count'};
+		&quit("ERROR load_dir_stack: \$config::dirs{$k}{weight} is undef") if ! defined $config::dirs{$k}{weight};
+		&quit("ERROR load_dir_stack: \$info{$k}{count} is undef" . Dumper(\%info) ) if ! defined $info{$k}{count};
 
-		$nw = int($config::dirs{$k}{weight} * $dh{$k}{'count'}) if defined $config::dirs{$k}{weight};
+		my $nw = $info{$k}{count};
+
+		$nw = int($config::dirs{$k}{weight} * $info{$k}{count});
 		$c += $nw;
-		$main::dir_stack{$k} = $c;
+		$dir_stack{$k} = $c;
 	}
 	$rand_range = $c;
 	print "DEBUG: load_dir_stack: highest result for random select is $c\n" if $DEBUG;
@@ -565,9 +552,9 @@ sub dir_stack_select
 {
 	my $r = int(rand($rand_range));
 
-	for my $k (sort { $main::dir_stack{$a} <=> $main::dir_stack{$b} } keys(%main::dir_stack))
+	for my $k (sort { $dir_stack{$a} <=> $dir_stack{$b} } keys(%main::dir_stack))
 	{
-		if($r < $main::dir_stack{$k})
+		if($r < $dir_stack{$k})
 		{
 			#print "$r Selected $k\n";
 			return $k;
@@ -594,4 +581,11 @@ sub get_sub_dirs
 	}
 
 	return @main::get_sub_dirs_arr;
+}
+
+sub quit
+{
+	my $string = shift;
+	cluck $string;
+	exit;
 }

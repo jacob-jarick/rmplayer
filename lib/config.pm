@@ -19,6 +19,7 @@ $app{main}{player_cmd}		= '';
 
 our %dir_defaults		= ();
 
+$dir_defaults{path}		= '';
 $dir_defaults{recursive}	= 0;
 $dir_defaults{enabled}		= 1;
 $dir_defaults{weight}		= 100;
@@ -26,8 +27,9 @@ $dir_defaults{filter}		= '';
 $dir_defaults{ignore_filter}	= '';
 
 
-my $config_file		= "$main::home/config.ini";
-my $dirs_file		= "$main::home/dirs.ini";
+our $config_file	= "$main::home/config.ini";
+our $dirs_file		= "$main::home/dirs.ini";
+our $info_file		= "$main::home/data.json";
 
 sub save
 {

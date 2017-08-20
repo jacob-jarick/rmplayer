@@ -261,19 +261,22 @@ sub dir_files
 	my @dir_list		= ();
 	my @dirlist_clean	= ();
 
-	&main::quit("ERROR: fn_readdir: dir '$dir' does not exist as a directory.\n") if ! -d $dir;
+	&main::quit("ERROR: dir_files: not a directory '$dir'\n") if ! -d $dir;
 
-	opendir(DIR, $dir) or return;
+	opendir(DIR, $dir) or die "error could not read dir '$dir' $!\n";
 	@dir_list = CORE::readdir(DIR);
 	closedir DIR;
 
 	# -- make sure we dont have . and .. in array --
 	for my $item(@dir_list)
 	{
-		next if $item eq "." || $item eq "..";
+		next if $item eq '.' || $item eq '..';
 
-		next if -d "$dir/$item";
-		push @dirlist_clean, "$dir/$item";
+		my $path = "$dir/$item";
+		$path =~ s/\\/\//g;
+		next if -d $path;
+
+		push @dirlist_clean, $path;
 	}
 	return @dirlist_clean;
 }

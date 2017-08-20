@@ -20,7 +20,9 @@ sub load
 	close(FILE);
 
 	my $json_string = join('', @tmp);
+
 	return undef if $json_string =~ /^(\n|\s)*$/;
+
 	my $perl_hash_or_arrayref  = decode_json $json_string;
 
 	return $perl_hash_or_arrayref;
@@ -31,7 +33,9 @@ sub save
 	my $file	= shift;
 	my $perl_scalar	= shift;
 
-	my $json_text   = encode_json $perl_scalar;
+
+	my $json = JSON->new->allow_nonref;
+	my $json_text = $json->pretty->encode( $perl_scalar );
 
 	open(FILE, ">$file") or die "save: error saving '$file' $!\n";
 	print FILE $json_text;
