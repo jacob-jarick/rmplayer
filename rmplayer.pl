@@ -181,7 +181,7 @@ while(1)
 	&history_add($file);
 	&check_keyboard($file);
 	&jhash::save($config::info_file, \%info) if($play_count % $config::app{main}{sync_every} == 0);
-	sleep(1);
+ 	sleep(1);
 }
 &rmp_exit;
 
@@ -203,7 +203,8 @@ sub get_keyboard
 {
 	my $key = '';
 	my $timeout = time + 0.3;
-	ReadMode 4;
+# 	ReadMode 4;
+	ReadMode 0;
 	while ($timeout>time && not defined ($key = ReadKey(-1)))
 	{
 		sleep(0.01);	# No key yet
