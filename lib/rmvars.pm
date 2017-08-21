@@ -7,7 +7,7 @@ use lib			"$Bin/lib";
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw(
-$DEBUG
+$stop_count
 $windows
 $home
 $cmd_file
@@ -31,13 +31,13 @@ $history_file
 $info_file
 );
 
-our $DEBUG		= 1;
 our $windows		= 0;
-
 our $home 		= &get_home;
+our $stop_count		= 0;
 
-our $version		= '4.0 alpha 27';
 our $media_ext		= "mp3|mp4|mpc|mpg|mpeg|avi|asf|wmf|wmv|ogg|ogm|rm|rmvb|mkv|mov";
+our $version		= '5 WIP';
+
 our $web_dir		= $Bin.'/web';
 our $scripts_dir	= $Bin.'/scripts';
 our $links_file		= $Bin.'/web/links.html';

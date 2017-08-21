@@ -30,6 +30,7 @@ our %ignore_hash	= ();
 our %last_modtime	= ();
 our %dir_stack		= ();
 our %info		= ();
+our %parent_hash	= ();
 our $percent		= 0.90;
 
 our $rand_range		= 1;
@@ -55,11 +56,6 @@ my $ascii = q{
 };
 
 my $help_txt = "Run and access web ui from http://localhost:8080\n";
-
-# =============================================================================
-# Main
-# =============================================================================
-
 
 # =============================================================================
 # check for lock file
@@ -146,6 +142,7 @@ our $STOP			= 0;
 
 while(1)
 {
+	&check_cmds;
 	#----------------------------------------------
 	# stop check
 
@@ -164,10 +161,10 @@ while(1)
 	# check play count limit
 
 	$play_count++;
-	if($main::play_count_limit &&  $main::play_count_limit < $play_count)
+	if($stop_count && $stop_count < $play_count)
 	{
-		print "* Hit count limit $main::play_count_limit. stopping playback after next file.\n";
-		$main::play_count_limit = 0;
+		print "* Hit play limit $stop_count. stopping playback after next file.\n";
+		$stop_count = 0;
 		$STOP = 1;
 	}
 
@@ -183,7 +180,6 @@ while(1)
 	&play($file);
 	&history_add($file);
 	&check_keyboard($file);
-	&check_cmds;
 	&jhash::save($config::info_file, \%info) if($play_count % $config::app{main}{sync_every} == 0);
 	sleep(1);
 }
@@ -239,22 +235,10 @@ sub check_keyboard
 # ---------------------------
 # play file
 
-sub file_parent
-{
-	my $file = shift;
-
-	for my $k(keys %config::dirs)
-	{
-		my @tmp = @{ $info{$k}{contents} };
-		return $k if &is_in_array($file, \@tmp );
-	}
-	&quit("file_parent: unable to find parent for '$file'\n");
-}
-
 sub history_add
 {
-	my $file = shift;
-	my $parent = &file_parent($file);
+	my $file	= shift;
+	my $parent	= $parent_hash{$file};
 
 	push @{ $info{$parent}{history} }, $file;
 	$info{$parent}{history_hash}{$file} = 1;
@@ -395,16 +379,12 @@ sub check_cmds
 		if($cmd =~ /^STOP/)
 		{
 			$STOP = 1;
-			print "*\n* Stopping playback.. ";
+			print "*\n* Stopping playback.. \n";
 		}
 
 		elsif($cmd =~ /^PLAY/)
 		{
-			# return play_count_limit to default vaule only when stopped.
-			$main::play_count_limit	= $main::play_count_limit_default	if $main::play_count_limit_default	> 0 && $STOP;
-
-			# reset play limit if stopped
-			$play_count	= 0		if $STOP;
+			$stop_count = $play_count = 0;
 
 			print "*\n* Resuming playback\n" if $STOP;
 			print "*\n* Skipping to next file\n" if !$STOP;
@@ -439,6 +419,12 @@ sub check_cmds
 
 			$config::dirs{$key}{enabled} = 1;
 			&reload;
+		}
+		elsif($cmd =~ /^LIMIT=(\d+)/)
+		{
+			$stop_count = $1;
+			$play_count = 0;
+			print "* INFO: Playback will stop after $stop_count files\n";
 		}
 		elsif($cmd =~ /^EXIT/)
 		{
@@ -496,7 +482,7 @@ sub trim_history
 		my $trim_n = int((1-($percent-$c)) * $info{$dir}{count});	# get amount of files to trim
 		$trim_n = 2 if $trim_n <= 1;	# always trim at least 2 files
 
-		print "DEBUG: Trimming History for '$dir', removing $trim_n entrys.\n" if $DEBUG;
+		print "DEBUG: Trimming History for '$dir', removing $trim_n entrys.\n" if $config::app{main}{debug};
 
 		$c = 0;
 		while($c <= $trim_n)
@@ -511,10 +497,9 @@ sub trim_history
 sub load_playlist
 {
 	print "LOADING DIRS: ";
-
+	%parent_hash = ();
 	for my $k (keys %config::dirs)
 	{
-		next if !$config::dirs{$k}{enabled};
 		&quit("load_playlist: \$config::dirs{$k}{path} is undef")			if ! defined $config::dirs{$k}{path};
 		&quit("ERROR: dirs.ini invalid path for '$k' - '$config::dirs{$k}{path}'\n")	if !-d $config::dirs{$k}{path};
 		print '.';
@@ -524,6 +509,7 @@ sub load_playlist
 		# remove ignored files
 		for my $i(@tmp)
 		{
+			$parent_hash{$i} = $k;
 			@{ $info{$k}{contents} } = grep { $_ ne $i } @{ $info{$k}{contents} } if defined $ignore_hash{$i};
 		}
 
@@ -566,7 +552,7 @@ sub load_playlist
 		my $found = 0;
 		for my $k2(keys %config::dirs)
 		{
-			if ($key eq $k2)
+			if ($key eq $k2 && $config::dirs{$key}{enabled})
 			{
 				$found++;
 				last;
@@ -582,7 +568,7 @@ sub load_ignore_list
 
 	for my $f (@ignore)
 	{
-		print "DEBUG: adding '$f' to ignore hash\n" if $DEBUG;
+		print "DEBUG: adding '$f' to ignore hash\n" if $config::app{main}{debug};
 		$ignore_hash{$f} = 1;
 	}
 }
@@ -594,7 +580,7 @@ sub load_dir_stack
 
 	for my $k(keys %config::dirs)
 	{
-		next if $config::dirs{$k}{disabled};
+		next if !$config::dirs{$k}{enabled};
 
 		&quit("ERROR load_dir_stack: \$config::dirs{$k}{weight} is undef") if ! defined $config::dirs{$k}{weight};
 		&quit("ERROR load_dir_stack: \$info{$k}{count} is undef" . Dumper(\%info) ) if ! defined $info{$k}{count};
@@ -606,7 +592,7 @@ sub load_dir_stack
 		$dir_stack{$k} = $c;
 	}
 	$rand_range = $c;
-	print "DEBUG: load_dir_stack: highest result for random select is $c\n" if $DEBUG;
+	print "DEBUG: load_dir_stack: highest result for random select is $c\n" if $config::app{main}{debug};
 }
 
 sub dir_stack_select

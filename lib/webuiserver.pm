@@ -185,10 +185,6 @@ sub r_limit
 	my $cgi = shift;
 	return if !ref $cgi;
 
-	open(FILE, ">/tmp/dump") or die;
-	print FILE Dumper($cgi->param('limit'));
-	close(FILE);
-
 	my $limit = $cgi->param('limit');
 
 	if($limit =~ /(\d+)/)
@@ -201,9 +197,7 @@ sub r_limit
 		return;
 	}
 
-	my @tmp = readf( $current_file);
-
-	&file_append($cmd_file, "LIMIT=$limit");
+	&file_append($cmd_file, "LIMIT=$limit\n");
 
  	print $cgi->header;
 	print &html_insert($index_html, "Limited playback to $limit files.\n");
@@ -526,11 +520,10 @@ sub r_disable
 
 	my $msg = '';
 
-	my $ref = &jhash::load($config::info_file);
-	%info = %$ref if defined $ref;
+	&config::load;
 
 	my $c = 1;
-	for my $key (keys %info)
+	for my $key (keys %config::dirs)
 	{
 		next if !$config::dirs{$key}{enabled};
 
@@ -553,13 +546,8 @@ sub r_enable2
 
 	my $dir = $cgi->param('dir');
 	my $msg = "Enabling '$dir'";
-	my $ref = &jhash::load($config::info_file);
-	%info	= %$ref if defined $ref;
 
 	&quit("r_enable2: \$config::dirs{$dir} is undef") if ! defined $config::dirs{$dir};
-
-	$config::dirs{$dir}{enable} = 1;
-	&config::save;
 
 	&misc::file_append($cmd_file, "ENABLE\t$dir");
 
@@ -571,13 +559,12 @@ sub r_enable
 {
 	my $cgi  = shift;
 	my $msg = 're-Enable Directory';
-	my $ref = &jhash::load($config::info_file);
-	%info	= %$ref if defined $ref;
+	&config::load;
 
 	my $c = 1;
-	for my $key (keys %info)
+	for my $key (keys %config::dirs)
 	{
-		next if $info{$file}{enabled};
+		next if $config::dirs{$key}{enabled};
 
 		my %h		= ();
 		$h{c}		= $c++;
