@@ -28,7 +28,6 @@ use jhash;
 our %history_hash	= ();
 our %ignore_hash	= ();
 our %last_modtime	= ();
-our %in_dirs_file	= ();
 our %dir_stack		= ();
 our %info		= ();
 our $percent		= 0.90;
@@ -61,14 +60,6 @@ my $help_txt = "Run and access web ui from http://localhost:8080\n";
 # Main
 # =============================================================================
 
-# load config
-
-&config::load;
-
-{
-	my $ref = &jhash::load($info_file);
-	%info = %$ref if defined $ref;
-}
 
 # =============================================================================
 # check for lock file
@@ -105,14 +96,17 @@ if(-f $lock_file)	# check if there is already a lockfile
 	}
 }
 
-# create lock file
 &save_file($lock_file, $$);
 
 # =============================================================================
 
-my $first_load = 1;
-&reload;
-
+{
+	my $ref = &jhash::load($info_file);
+	%info = %$ref if defined $ref;
+	&config::load;
+	&load_playlist;
+	&load_dir_stack;
+}
 # start webserver
 
 our $server_pid		= 0;
@@ -141,11 +135,6 @@ print
 **=============================================================**
 $ascii
 ";
-
-&load_playlist;
-&load_dir_stack;
-&jhash::save($config::info_file, \%info);
-# print Dumper(\%info);
 
 # =============================================================================
 # Main Loop
@@ -195,7 +184,7 @@ while(1)
 	&history_add($file);
 	&check_keyboard($file);
 	&check_cmds;
-	&jhash::save($config::info_file, \%info) if($play_count % 3 == 0);
+	&jhash::save($config::info_file, \%info) if($play_count % $config::app{main}{sync_every} == 0);
 	sleep(1);
 }
 &rmp_exit;
@@ -207,7 +196,7 @@ while(1)
 sub rmp_exit
 {
 	unlink $lock_file;
-# 	kill 9, $server_pid;
+ 	kill 9, $server_pid;
 
 	&jhash::save($config::info_file, \%info);
 
@@ -268,8 +257,10 @@ sub history_add
 	my $parent = &file_parent($file);
 
 	push @{ $info{$parent}{history} }, $file;
-	$info{$parent}{history_hash}{$file}	= 1;
+	$info{$parent}{history_hash}{$file} = 1;
 	&trim_history($parent);
+	&file_append($history_file, "$file\n");
+	&misc::trim_log($history_file, 10);
 }
 
 sub play
@@ -363,7 +354,6 @@ sub check_que
 
 	my @tmp	= &readf($que_file);
 	my $que	= '';
-	my $a	= '';
 
 	$que = $tmp[0] if defined $tmp[0];
 
@@ -376,7 +366,9 @@ sub check_que
 		}
 		else
 		{
+			print "* QUEUED: '$que'\n";
 			$play_file = $que;
+			shift @tmp;
 		}
 		&save_file_arr($que_file, \@tmp);
 	}
@@ -430,6 +422,22 @@ sub check_cmds
 			print "*\n* $1.\n" if($cmd =~ /^RELOAD\s+(.*)$/);
 			print "*\n* Reload requested.\n";
 
+			&reload;
+		}
+		elsif($cmd =~ /^DISABLE\t+(.*)/)
+		{
+			my $key = $1;
+			print "* DISABLE $key\n";
+
+			$config::dirs{$key}{enabled} = 0;
+			&reload;
+		}
+		elsif($cmd =~ /^ENABLE\t+(.*)/)
+		{
+			my $key = $1;
+			print "* DISABLE $key\n";
+
+			$config::dirs{$key}{enabled} = 1;
 			&reload;
 		}
 		elsif($cmd =~ /^EXIT/)
@@ -506,6 +514,7 @@ sub load_playlist
 
 	for my $k (keys %config::dirs)
 	{
+		next if !$config::dirs{$k}{enabled};
 		&quit("load_playlist: \$config::dirs{$k}{path} is undef")			if ! defined $config::dirs{$k}{path};
 		&quit("ERROR: dirs.ini invalid path for '$k' - '$config::dirs{$k}{path}'\n")	if !-d $config::dirs{$k}{path};
 		print '.';
@@ -616,12 +625,16 @@ sub dir_stack_select
 
 sub reload
 {
-	print "reload STUB\n";
+	&config::save;
+
+	&load_playlist;
+	&load_dir_stack;
 }
 
 sub quit
 {
 	my $string = shift;
 	cluck $string;
+	kill 9, $server_pid;
 	exit;
 }

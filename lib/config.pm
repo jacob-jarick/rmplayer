@@ -33,8 +33,8 @@ our $info_file		= "$main::home/data.json";
 
 sub save
 {
-	WriteINI ($config_file, \%app);
-	WriteINI ($dirs_file, \%dirs);
+	WriteINI ($config_file,	\%app);
+	WriteINI ($dirs_file,	\%dirs);
 }
 
 sub load

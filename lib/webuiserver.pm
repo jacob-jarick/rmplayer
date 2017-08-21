@@ -246,9 +246,7 @@ sub r_status
 		push @tmp3, $_ if $_ ne '';
 	}
 
-
 	$que_string = join("<BR>\n", @tmp3);
-
 	$que_string = "<HR>QUEUED<BR>$que_string" if $que_string ne '' && $que_string =~ /\w/i;
 
  	print	$cgi->header;
@@ -307,11 +305,11 @@ sub r_history
 
 sub html_insert_hash
 {
-	my $file = shift;
-	my $r = shift;
-	my %h = %$r;
-	my @html = readf($file);
-	my @tmp = ();
+	my $file	= shift;
+	my $r		= shift;
+	my %h		= %$r;
+	my @html	= readf($file);
+	my @tmp		= ();
 
 	for my $line (@html)
 	{
@@ -516,12 +514,10 @@ sub r_disable2
 
 	my $dir = $cgi->param('dir');
 
-	my $msg = "Disabling '$dir'";
-
-	&misc::file_append($cmd_file, "RELOAD\tDisabling $dir");
+	&misc::file_append($cmd_file, "DISABLE\t$dir");
 
  	print $cgi->header;
-	print &html_insert($index_html, $msg);
+	print &html_insert($index_html, "Disabling '$dir'");
 }
 
 sub r_disable
@@ -533,23 +529,20 @@ sub r_disable
 	my $ref = &jhash::load($config::info_file);
 	%info = %$ref if defined $ref;
 
-	my $c = 0;
+	my $c = 1;
 	for my $key (keys %info)
 	{
-		$c++;
-		chomp $file;
-
 		next if !$config::dirs{$key}{enabled};
 
 		my %h		= ();
-		$h{c}		= $c;
-		$h{fn}		= $file;
-		$h{file}	= $file;
+		$h{c}		= $c++;
+		$h{fn}		= $key;
+		$h{file}	= $key;
 
 		$msg .= join('', &html_insert_hash($disable_form, \%h));
 
 	}
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, $msg);
 }
 
@@ -568,7 +561,7 @@ sub r_enable2
 	$config::dirs{$dir}{enable} = 1;
 	&config::save;
 
-	file_append($cmd_file, "RELOAD\tre-Enabling $dir");
+	&misc::file_append($cmd_file, "ENABLE\t$dir");
 
  	print	$cgi->header;
 	print &html_insert($index_html, $msg);
@@ -581,22 +574,19 @@ sub r_enable
 	my $ref = &jhash::load($config::info_file);
 	%info	= %$ref if defined $ref;
 
-	my $c = 0;
+	my $c = 1;
 	for my $key (keys %info)
 	{
-		$c++;
-		chomp $file;
-
 		next if $info{$file}{enabled};
 
 		my %h		= ();
-		$h{c}		= $c;
-		$h{fn}		= $file;
-		$h{file}	= $file;
+		$h{c}		= $c++;
+		$h{fn}		= $key;
+		$h{file}	= $key;
 
 		$msg .= join('', &html_insert_hash($enable_form, \%h));
 	}
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, $msg);
 }
 
@@ -608,8 +598,8 @@ sub format_fn
 	my $name	= $1;
 	my $ext		= $2;
 
-	$name =~ s/(\.|_)/ /g;
-	$ext = lc($ext);
+	$name		=~ s/(\.|_)/ /g;
+	$ext		= lc($ext);
 
 	return "$name.$ext";
 }

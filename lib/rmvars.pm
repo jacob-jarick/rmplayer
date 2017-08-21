@@ -29,7 +29,6 @@ $lock_file
 $ignore_file
 $history_file
 $info_file
-$dh_file
 );
 
 our $DEBUG		= 1;
@@ -49,14 +48,13 @@ our $browse_form	= $Bin.'/web/browse_form.html';
 our $disable_form	= $Bin.'/web/disable_form.html';
 our $enable_form	= $Bin.'/web/enable_form.html';
 
+our $lock_file		= "$home/LOCKFILE.txt";
 our $current_file	= "$home/playing.txt";;
 our $que_file		= "$home/queue.txt";;
 our $cmd_file		= "$home/commands.txt";;
-our $lock_file		= "$home/LOCKFILE.txt";
 our $ignore_file	= "$home/ignore_list.txt";
 our $history_file	= "$home/history.txt";
 our $info_file		= "$home/data.json";
-our $dh_file		= "$home/dont_touch_me.hash";
 
 sub get_home
 {

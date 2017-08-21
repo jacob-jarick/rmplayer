@@ -96,6 +96,24 @@ sub readf
         return @file;
 }
 
+sub trim_log
+{
+	my $file = shift;
+	my $limit = shift;
+
+	my @tmp = &readf($file);
+
+	my $size = $#tmp;
+	if($size > $limit)
+	{
+		my $start = $size - $limit;
+		my @tmp2 = @tmp[$start .. $size];
+		&save_file_arr($file, \@tmp2);
+
+	}
+	return;
+}
+
 #--------------------------------------------------------------------------------------------------------------
 # read file
 #--------------------------------------------------------------------------------------------------------------
