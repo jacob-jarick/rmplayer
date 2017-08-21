@@ -276,6 +276,7 @@ sub play
 	my $cmd	= "$config::app{main}{player_cmd} \"$play_file\" > /dev/null 2>&1";
 	$cmd	= "$config::app{main}{player_cmd} \"$play_file\" > NUL" if lc $^O eq 'mswin32';
 
+	print "CMD = $cmd\n"  if $config::app{main}{debug};
 	system($cmd);
 }
 
