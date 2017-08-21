@@ -274,7 +274,12 @@ sub play
 	&save_file($current_file, $play_file);
 
 	my $cmd	= "$config::app{main}{player_cmd} \"$play_file\" > /dev/null 2>&1";
-	$cmd	= "$config::app{main}{player_cmd} \"$play_file\" > NUL" if lc $^O eq 'mswin32';
+
+	if (lc $^O eq 'mswin32')
+	{
+		$play_file =~ s/\//\\/g;	# some windows apps do not like / in paths
+		$cmd = "$config::app{main}{player_cmd} \"$play_file\" > NUL" ;
+	}
 
 	print "CMD = $cmd\n"  if $config::app{main}{debug};
 	system($cmd);
