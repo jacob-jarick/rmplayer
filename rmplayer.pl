@@ -522,6 +522,8 @@ sub load_playlist
 
 		$info{$k}{count} = scalar(@{ $info{$k}{contents} } );
 
+		print "[$k = $info{$k}{count}]" if $config::app{main}{debug};
+
 		foreach my $key (keys %{$info{$k}{history_hash}})
 		{
 			if (! -f $key)
@@ -547,7 +549,6 @@ sub load_playlist
 			push @tmp, $key;
 		}
 		@{$info{$k}{history}} = @tmp;
-
  		&trim_history($k); # trim history on playlist load
 	}
 
@@ -587,7 +588,11 @@ sub load_dir_stack
 
 	for my $k(keys %config::dirs)
 	{
-		next if !$config::dirs{$k}{enabled};
+		if (!$config::dirs{$k}{enabled})
+		{
+			print "DEBUG: ignoring disabled dir '$k'\n";
+			next;
+		}
 
 		&quit("ERROR load_dir_stack: \$config::dirs{$k}{weight} is undef") if ! defined $config::dirs{$k}{weight};
 		&quit("ERROR load_dir_stack: \$info{$k}{count} is undef" . Dumper(\%info) ) if ! defined $info{$k}{count};

@@ -14,7 +14,7 @@ sub load
 	if (!-f $file)
 	{
 		my %h = ();
-		"load: WARNING '$file' does not exist: $!\n";
+		print "load: WARNING '$file' does not exist: $!\n";
 		return \%h;
 	}
 
