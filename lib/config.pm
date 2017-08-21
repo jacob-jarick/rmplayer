@@ -59,7 +59,11 @@ sub load
 		WriteINI ($config_file, \%app);
 	}
 
-	die "dirs file '$dirs_file' not found" if ! -f $dirs_file;
+	if (! -f $dirs_file)
+	{
+		print "ERROR: no dirs.ini file, please create before proceeding\n";
+		die "dirs file '$dirs_file' not found\n";
+	}
 	my $ini	= ReadINI $dirs_file;
 	my %hash	= %{$ini};
 
