@@ -11,7 +11,12 @@ sub load
 {
 	my $file = shift;
 
-	die "load: WARNING '$file' does not exist: $!\n" if !-f $file;
+	if (!-f $file)
+	{
+		my %h = ();
+		"load: WARNING '$file' does not exist: $!\n";
+		return \%h;
+	}
 
 	open(FILE, $file)  or die "save: load error reading '$file' $!\n";
 	my @tmp = <FILE>;
