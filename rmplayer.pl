@@ -279,7 +279,7 @@ sub play
 	if (lc $^O eq 'mswin32')
 	{
 		$play_file =~ s/\//\\/g;	# some windows apps do not like / in paths
-		$cmd = "$config::app{main}{player_cmd} \"$play_file\" > NUL" ;
+		$cmd = "cmd /c $config::app{main}{player_cmd} \"$play_file\" > NUL" ;
 	}
 
 	print "CMD = $cmd\n"  if $config::app{main}{debug};
