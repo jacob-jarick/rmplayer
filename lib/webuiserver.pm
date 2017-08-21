@@ -22,27 +22,27 @@ my $script_out_file = "$Bin/script_out.txt";
 
 my %dispatch =
 (
-	'/exit' => \&r_exit,
-	'/stop' => \&r_stop,
-	'/script_out' => \&r_script_out,
-	'/stopped' => \&r_stopped,
-	'/play' => \&r_play,
-	'/next' => \&r_next,
-	'/ignore' => \&r_ignore,
-	'/browse' => \&r_browse,
-	'/browse2' => \&r_browse2,
-	'/select' => \&r_select,
-	'/limit' => \&r_limit,
-	'/reload' => \&r_reload,
-	'/select2' => \&r_select2,
-	'/history' => \&r_history,
-	'/que' => \&r_que,
-	'/' => \&r_status,
-	'/scripts' => \&r_scripts,
-	'/disable' => \&r_disable,
-	'/disable2' => \&r_disable2,
-	'/enable' => \&r_enable,
-	'/enable2' => \&r_enable2,
+	'/exit'		=> \&r_exit,
+	'/stop'		=> \&r_stop,
+	'/script_out'	=> \&r_script_out,
+	'/stopped'	=> \&r_stopped,
+	'/play'		=> \&r_play,
+	'/next'		=> \&r_next,
+	'/ignore'	=> \&r_ignore,
+	'/browse'	=> \&r_browse,
+	'/browse2'	=> \&r_browse2,
+	'/select'	=> \&r_select,
+	'/limit'	=> \&r_limit,
+	'/reload'	=> \&r_reload,
+	'/select2'	=> \&r_select2,
+	'/history'	=> \&r_history,
+	'/que'		=> \&r_que,
+	'/'		=> \&r_status,
+	'/scripts'	=> \&r_scripts,
+	'/disable'	=> \&r_disable,
+	'/disable2'	=> \&r_disable2,
+	'/enable'	=> \&r_enable,
+	'/enable2'	=> \&r_enable2,
 
 );
 
@@ -77,8 +77,6 @@ sub handle_request
 		}
 		elsif(($path =~ /\/scripts\/.*(sh|bat)/ && -f "$scripts_dir/$path_tmp"))
 		{
-			#my $result = join('', `$scripts_dir/$path_tmp`);
-
 			my $result = '';
 
 			# NEW METHOD - need to output results to a log file.
@@ -104,12 +102,13 @@ sub r_exit
 	my $cgi  = shift;
 	return if !ref $cgi;
 
-	file_append( $main::cmd_file, "EXIT");	# append to quefile for cmd
+	file_append( $cmd_file, 'EXIT');	# append to quefile for cmd
 
-	system($main::kill_cmd);
+	&config::load;
+	system($config::app{main}{kill_cmd} );
 
  	print	$cgi->header;
-	print &html_insert($index_html, "Exiting");
+	print &html_insert($index_html, 'Exiting');
 }
 
 sub r_stop
@@ -117,23 +116,24 @@ sub r_stop
 	my $cgi  = shift;
 	return if !ref $cgi;
 
-	file_append( $main::cmd_file, "STOP");	# append to quefile for cmd
+	file_append( $cmd_file, 'STOP');	# append to quefile for cmd
 
-	system($main::kill_cmd);
+	&config::load;
+	system($config::app{main}{kill_cmd} );
 
  	print	$cgi->header;
-	print &html_insert($index_html, "STOPPING", '/stopped');
+	print &html_insert($index_html, 'STOPPING', '/stopped');
 }
 
 sub r_reload
 {
-	my $cgi  = shift;
+	my $cgi = shift;
 	return if !ref $cgi;
 
-	file_append( $main::cmd_file, "RELOAD");	# append to quefile for cmd
+	file_append( $cmd_file, 'RELOAD');	# append to quefile for cmd
 
  	print	$cgi->header;
-	print &html_insert($index_html, "RELOADING PLAYLIST", '/');
+	print &html_insert($index_html, 'RELOADING PLAYLIST', '/');
 }
 
 sub r_stopped
@@ -142,7 +142,7 @@ sub r_stopped
 	return if !ref $cgi;
 
  	print	$cgi->header;
-	print &html_insert($index_html, "STOPPED");
+	print &html_insert($index_html, 'STOPPED');
 }
 
 sub r_play
@@ -150,10 +150,10 @@ sub r_play
 	my $cgi  = shift;
 	return if !ref $cgi;
 
-	file_append( $main::cmd_file, "PLAY");	# append to quefile for cmd
+	file_append( $cmd_file, 'PLAY');	# append to quefile for cmd
 
  	print	$cgi->header;
-	print &html_insert($index_html, "Resuming Playback", '/');
+	print &html_insert($index_html, 'Resuming Playback', '/');
 }
 
 sub r_script_out
@@ -172,12 +172,13 @@ sub r_next
 	my $cgi  = shift;
 	return if !ref $cgi;
 
-	file_append( $main::cmd_file, "PLAY");	# append to quefile for cmd
+	file_append( $cmd_file, 'PLAY');	# append to quefile for cmd
 
-	system($main::kill_cmd);
+	&config::load;
+	system($config::app{main}{kill_cmd} );
 
  	print	$cgi->header;
-	print &html_insert($index_html, "skipping to next file", '/');
+	print &html_insert($index_html, 'skipping to next file', '/');
 }
 
 sub r_limit
@@ -212,6 +213,7 @@ sub r_ignore
 
 	file_append( $cmd_file, "IGNORE\t" . $tmp[0]);
 
+	&config::load;
 	system($config::app{main}{kill_cmd});
 
  	print	$cgi->header;
@@ -384,7 +386,7 @@ sub r_scripts
 
 sub r_select2
 {
-	my $cgi 	= shift;
+	my $cgi = shift;
 
 	return if !ref $cgi;
 
@@ -497,13 +499,13 @@ sub r_browse2
 		$msg .= join('', &html_insert_hash($queue_form, \%h));
 
 	}
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, $msg);
 }
 
 sub r_disable2
 {
-	my $cgi  = shift;
+	my $cgi = shift;
 	return if !ref $cgi;
 
 	my $dir = $cgi->param('dir');
@@ -516,13 +518,12 @@ sub r_disable2
 
 sub r_disable
 {
-	my $cgi  = shift;
-
-	my $msg = '';
+	my $cgi	= shift;
+	my $msg	= '';
+	my $c	= 1;
 
 	&config::load;
 
-	my $c = 1;
 	for my $key (keys %config::dirs)
 	{
 		next if !$config::dirs{$key}{enabled};
@@ -577,14 +578,12 @@ sub r_enable
 	print &html_insert($index_html, $msg);
 }
 
-
 sub format_fn
 {
 	my $f		= shift;
 	$f		=~ /^(.+)\.(.+?)$/;
 	my $name	= $1;
 	my $ext		= $2;
-
 	$name		=~ s/(\.|_)/ /g;
 	$ext		= lc($ext);
 

@@ -586,6 +586,7 @@ sub load_dir_stack
 	my $index	= 0;
 	%dir_stack	= ();
 
+	print "LOAD DIE STACK\n" if $config::app{main}{debug};
 	for my $k(keys %config::dirs)
 	{
 		if (!$config::dirs{$k}{enabled})
@@ -599,16 +600,20 @@ sub load_dir_stack
 
 		$index += int( ($config::dirs{$k}{weight}/100) * $info{$k}{count});
 		$dir_stack{$k} = $index;
+		print "'$k' = $dir_stack{$k}\n" if $config::app{main}{debug};
 	}
 	$rand_range = $index;
-	print "DEBUG: load_dir_stack: highest result for random select is $index\n" . Dumper(\%dir_stack) if $config::app{main}{debug};
+	if ($config::app{main}{debug})
+	{
+		print "DEBUG: load_dir_stack: highest result for random select is $index\n";
+	}
 }
 
 sub dir_stack_select
 {
 	my $r = int(rand($rand_range));
 
-	for my $k (sort { $dir_stack{$a} <=> $dir_stack{$b} } keys(%main::dir_stack))
+	for my $k (sort { $dir_stack{$a} <=> $dir_stack{$b} } keys %dir_stack)
 	{
 		if($r < $dir_stack{$k})
 		{
