@@ -582,7 +582,7 @@ sub load_ignore_list
 
 sub load_dir_stack
 {
-	my $c		= 0;
+	my $index	= 0;
 	%dir_stack	= ();
 
 	for my $k(keys %config::dirs)
@@ -592,14 +592,11 @@ sub load_dir_stack
 		&quit("ERROR load_dir_stack: \$config::dirs{$k}{weight} is undef") if ! defined $config::dirs{$k}{weight};
 		&quit("ERROR load_dir_stack: \$info{$k}{count} is undef" . Dumper(\%info) ) if ! defined $info{$k}{count};
 
-		my $nw = $info{$k}{count};
-
-		$nw = int( ($config::dirs{$k}{weight}/100) * $info{$k}{count});
-		$c += $nw;
-		$dir_stack{$k} = $c;
+		$index += int( ($config::dirs{$k}{weight}/100) * $info{$k}{count});
+		$dir_stack{$k} = $index;
 	}
-	$rand_range = $c;
-	print "DEBUG: load_dir_stack: highest result for random select is $c\n" if $config::app{main}{debug};
+	$rand_range = $index;
+	print "DEBUG: load_dir_stack: highest result for random select is $index\n" . Dumper(\%dir_stack) if $config::app{main}{debug};
 }
 
 sub dir_stack_select
@@ -610,7 +607,6 @@ sub dir_stack_select
 	{
 		if($r < $dir_stack{$k})
 		{
-			#print "$r Selected $k\n";
 			return $k;
 		}
 	}
