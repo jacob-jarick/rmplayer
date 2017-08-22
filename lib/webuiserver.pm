@@ -401,7 +401,7 @@ sub r_select2
 
 	for my $f ( @{$info{$dir}{contents}} )
 	{
-		next if &is_in_array($f, $info{$dir}{history});
+		next if &is_in_array($f, \@{$info{$dir}{history}});
 		push @tmp, $f;
 	}
 

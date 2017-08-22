@@ -190,9 +190,6 @@ sub display
 			-sticky=>	'nw',
 			-padx=>		2
 		);
-
-
-
 		$row++;
 	}
 
