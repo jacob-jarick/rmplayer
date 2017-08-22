@@ -43,7 +43,7 @@ sub display
 {
 	my $row = 1;
 
-	our $main = new MainWindow; # Main Window
+	$main = new MainWindow; # Main Window
 	$main->title("rmplayer.pl config");
 
 	$main->raise;
@@ -216,7 +216,6 @@ sub display
 		{
 			my $dd_dir = $main->chooseDirectory
 			(
-# 				-initialdir=>$config::dirs{$name}{path},
 				-title=>"Choose a directory"
 			);
 

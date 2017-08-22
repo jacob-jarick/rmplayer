@@ -9,6 +9,8 @@ use warnings;
 use File::Spec::Functions;
 use Cwd qw(realpath);
 use File::stat;
+use Data::Dumper::Concise;
+use List::MoreUtils qw(uniq);
 
 sub ci_sort
 {
@@ -276,16 +278,40 @@ sub dir_files_recursive
 	my @dirlist_clean = &dir_files($dir);
 
 	# -- make sure we dont have . and .. in array --
+	my @subdirs = &get_sub_dirs($dir);
+# 	print Dumper(\@subdirs);
+	for my $path(@subdirs)
+	{
+		push @dirlist_clean, &dir_files($path);
+	}
+	return sort {lc $a cmp lc $b} (uniq (@dirlist_clean));
+}
+
+sub get_sub_dirs
+{
+	my $dir	= shift;
+	&main::quit("ERROR: get_sub_dirs: not a directory '$dir'\n") if ! -d $dir;
+
+	opendir(DIR, $dir) or die "error could not read dir '$dir' $!\n";
+	my @dir_list = CORE::readdir(DIR);
+	closedir DIR;
+	my @subdirs = ();
+	push @subdirs, $dir;
+
+	# -- make sure we dont have . and .. in array --
 	for my $item(@dir_list)
 	{
 		next if $item eq '.' || $item eq '..';
 
 		my $path = "$dir/$item";
 		$path =~ s/\\/\//g;
-		next if ! -d $path;
-		push @dirlist_clean, &dir_files($path);
+		next if !-d $path;
+		print "path = $path\n";
+
+		push @subdirs, $path;
+		push @subdirs, &get_sub_dirs($path);
 	}
-	return @dirlist_clean;
+	return sort {lc $a cmp lc $b} (uniq (@subdirs));
 }
 
 # lists files ONLY
@@ -309,10 +335,11 @@ sub dir_files
 		my $path = "$dir/$item";
 		$path =~ s/\\/\//g;
 		next if -d $path;
+		next if $path !~ /\.$main::media_ext$/i;
 
 		push @dirlist_clean, $path;
 	}
-	return @dirlist_clean;
+	return sort {lc $a cmp lc $b} (uniq (@dirlist_clean));
 }
 
 1;
