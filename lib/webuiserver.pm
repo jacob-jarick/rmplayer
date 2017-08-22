@@ -5,7 +5,7 @@ use HTTP::Server::Simple::CGI;
 use base qw(HTTP::Server::Simple::CGI);
 use CGI::Carp qw(fatalsToBrowser);
 use List::Util 'shuffle';
-use Proc::Background;
+# use Proc::Background;
 
 use FindBin qw/$Bin/;
 use lib			$Bin;
@@ -56,7 +56,7 @@ sub handle_request
 	my $path = $cgi->path_info();
 	my $handler = $dispatch{$path};
 
-	if (ref($handler) eq "CODE")
+	if (ref($handler) eq 'CODE')
 	{
 		print "HTTP/1.0 200 OK\r\n";
 		$handler->($cgi);
