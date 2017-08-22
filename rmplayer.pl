@@ -110,16 +110,17 @@ if(-f $lock_file)	# check if there is already a lockfile
 
 our $server_pid :shared;
 $server_pid = 0;
+my $thr;
 if($config::app{main}{webserver})
 {
 # 	$server_pid = webuiserver->new(8080)->background();
-	my $thr = threads->create('start_thread');
+	$thr = threads->create('start_thread');
 	$thr->detach();
 }
 
 sub start_thread
 {
-	$server_pid = webuiserver->new(8080)->background();
+	$server_pid = webuiserver->new(8080)->run();
 
 }
 

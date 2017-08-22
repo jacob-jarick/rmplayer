@@ -1,9 +1,11 @@
 package webuiserver;
 
 use Data::Dumper::Concise;
+use HTTP::Server::Simple;
 use HTTP::Server::Simple::CGI;
 use base qw(HTTP::Server::Simple::CGI);
-use CGI::Carp qw(fatalsToBrowser);
+# use CGI::Carp qw(fatalsToBrowser);
+use CGI;
 use List::Util 'shuffle';
 # use Proc::Background;
 
