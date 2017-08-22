@@ -11,7 +11,8 @@ use Data::Dumper::Concise;
 use Config::IniHash;
 use JSON;
 
-use lib			"$Bin/lib";
+use FindBin qw/$Bin/;
+use lib "$Bin/lib";
 use rmvars;
 use webuiserver;
 use misc;

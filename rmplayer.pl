@@ -6,7 +6,7 @@ use warnings;
 use strict;
 
 use Carp qw(cluck longmess shortmess);
-use FindBin qw/$Bin/;
+
 use Time::HiRes qw ( time alarm sleep );	# high precision time
 use Scalar::Util qw(looks_like_number);
 use Data::Dumper::Concise;
@@ -14,7 +14,8 @@ use Config::IniHash;
 use Term::ReadKey;
 use JSON;
 
-use lib			"$Bin/lib";
+use FindBin qw/$Bin/;
+use lib "$Bin/lib";
 use rmvars;
 use webuiserver;
 use misc;
