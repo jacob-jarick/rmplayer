@@ -86,6 +86,8 @@ sub load
 		$dirs{$k}{weight}	= 1	if $dirs{$k}{weight} < 1;
 
 		$dirs{$k}{recursive}	= 0	if $dirs{$k}{recursive} !~ /^(0|1)$/;
+
+		$dirs{$k}{path}		=~ s/\\/\//g;
 	}
 }
 

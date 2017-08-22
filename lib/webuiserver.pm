@@ -478,25 +478,28 @@ sub r_browse2
 
 	my $dir	= $cgi->param('dir');
 	my $msg	= '';
-	my $c	= 0;
+	my $c	= 1;
 
 	my $ref = &jhash::load($config::info_file);
 	%info = %$ref if defined $ref;
 
-	for my $file (sort (@{$info{$dir}{'contents'}}))
+	my %hash = ();
+	for my $file ( (@{$info{$dir}{'contents'}}) )
 	{
-		$c++;
 		my $fn = $file;
-		$fn =~ s/^.*(\\|\/)(.*?)$/$2/;
+		$fn =~ m/^.*(\\|\/)(.*?)$/;
 		$fn = &format_fn($2);
+		$hash{$fn} = $file;
+	}
 
+	for my $name (sort {lc $a cmp lc $b} keys %hash)
+	{
 		my %h		= ();
-		$h{c}		= $c;
-		$h{fn}		= $fn;
-		$h{file}	= $file;
+		$h{c}		= $c++;
+		$h{fn}		= $name;
+		$h{file}	= $hash{$name};
 
 		$msg .= join('', &html_insert_hash($queue_form, \%h));
-
 	}
  	print $cgi->header;
 	print &html_insert($index_html, $msg);
