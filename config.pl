@@ -8,13 +8,10 @@ use warnings;
 use Carp;
 
 use Tk;
-use Tk::Toplevel;
-use Tk::FontDialog;
-use Tk::ColourChooser;
 use Config::IniHash;
 use Tk::ROText;
-
 use Data::Dumper::Concise;
+use Tk::Spinbox;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
@@ -40,13 +37,6 @@ sub rm
 {
 	my $name = shift;
 	delete $config::dir{$name} if defined $config::dir{$name};
-}
-
-sub change_name
-{
-	my $name	= shift;
-
-	confess "change_name: \$name '$name' not found in \$config::dir" if ! defined $config::dir{$name};
 }
 
 sub display
@@ -178,6 +168,29 @@ sub display
 			-sticky=>	'nw',
 			-padx=>		2
 		);
+		$frame_top->Label(-text=>'Weight')-> grid
+		(
+			-row=>		$row,
+			-column=>	$col++,
+			-sticky=>	'nw',
+			-padx=>		2
+		);
+
+		my $spinbox = $frame_top->Spinbox
+		(
+			-textvariable=>\$config::dirs{$name}{weight},
+			-from=>1,
+			-to=>100,
+			-increment=>1,
+			-width=>8
+		)-> grid
+		(
+			-row=>		$row,
+			-column=>	$col++,
+			-sticky=>	'nw',
+			-padx=>		2
+		);
+
 
 
 		$row++;
