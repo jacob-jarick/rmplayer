@@ -1,22 +1,20 @@
 package webuiserver;
 
+use Data::Dumper::Concise;
+use HTTP::Server::Simple::CGI;
+use base qw(HTTP::Server::Simple::CGI);
+use CGI::Carp qw(fatalsToBrowser);
+use List::Util 'shuffle';
+use Proc::Background;
+
 use FindBin qw/$Bin/;
 use lib			$Bin;
 use lib			"$Bin/lib";
-
-use Proc::Background;
 
 use misc;
 use rmvars;
 use jhash;
 use config;
-
-use Data::Dumper::Concise;
-use HTTP::Server::Simple::CGI;
-use base qw(HTTP::Server::Simple::CGI);
-use CGI::Carp qw(fatalsToBrowser);
-
-use List::Util 'shuffle';
 
 my $script_out_file = "$Bin/script_out.txt";
 
@@ -72,7 +70,6 @@ sub handle_request
 			print "HTTP/1.0 200 OK\r\n";
 			print	$cgi->header,
 				html_insert("$web_dir/$path_tmp", ''),
-				#readf("$web_dir/$path_tmp", ''),
 				$cgi->end_html;
 		}
 		elsif(($path =~ /\/scripts\/.*(sh|bat)/ && -f "$scripts_dir/$path_tmp"))
