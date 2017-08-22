@@ -5,6 +5,12 @@ require Exporter;
 use strict;
 use warnings;
 
+use FindBin qw/$Bin/;
+use lib			$Bin;
+use lib			"$Bin/lib";
+
+use rmvars;
+
 use Config::IniHash;
 
 our %app			= ();
@@ -27,9 +33,6 @@ $dir_defaults{filter}		= '';
 $dir_defaults{ignore_filter}	= '';
 
 
-our $config_file	= "$main::home/config.ini";
-our $dirs_file		= "$main::home/dirs.ini";
-our $info_file		= "$main::home/data.json";
 
 sub save
 {

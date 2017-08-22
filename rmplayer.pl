@@ -239,10 +239,11 @@ sub check_keyboard
 sub history_add
 {
 	my $file	= shift;
+	&quit("ERROR history_add: \$parent_hash{$file} is undef\n" . Dumper(\%parent_hash)) if ! defined $parent_hash{$file};
 	my $parent	= $parent_hash{$file};
 
 	push @{ $info{$parent}{history} }, $file;
-	$info{$parent}{history_hash}{$file} = 1;
+	$history_hash{$file} = 1;
 	&trim_history($parent);
 	&file_append($history_file, "$file\n");
 	&misc::trim_log($history_file, 10);
@@ -310,7 +311,7 @@ sub random_select
 
 	for my $f(@tmp2)
 	{
-		next if ( defined $info{$d}{history_hash}{$f});
+		next if ( defined $history_hash{$f});
 		push @tmp, $f;
 	}
 
@@ -495,7 +496,7 @@ sub trim_history
 		while($c <= $trim_n)
 		{
 			my $f = shift(@{$info{$dir}{history}});	# remove an entry from the front of array
-			delete $info{$dir}{history_hash}{$f} if defined $info{$dir}{history_hash}{$f};
+			delete $history_hash{$f} if defined $history_hash{$f};
 			$c++;
 		}
 	}
@@ -511,37 +512,55 @@ sub load_playlist
 		&quit("ERROR: dirs.ini invalid path for '$k' - '$config::dirs{$k}{path}'\n")	if !-d $config::dirs{$k}{path};
 		print '.';
 
-		my @tmp = @{ $info{$k}{contents} } = &dir_files($config::dirs{$k}{path});
+		my @tmp = ();
 
-		# remove ignored files
-		for my $i(@tmp)
+		# setup history hash
+		for my $file(@{ $info{$k}{history} })
 		{
-			$parent_hash{$i} = $k;
-			@{ $info{$k}{contents} } = grep { $_ ne $i } @{ $info{$k}{contents} } if defined $ignore_hash{$i};
+			if(!-f $file)
+			{
+				print "\n* WARNING: $file has been moved or deleted\n";
+				next;
+			}
+			push @tmp, $file;
+			$history_hash{$file} = 1;
+		}
+		@{ $info{$k}{history} } = @tmp;
+
+		# load dir contents
+		if($config::dirs{$k}{recursive})
+		{
+			@tmp = @{ $info{$k}{contents} } = &dir_files_recursive($config::dirs{$k}{path});
+		}
+		else
+		{
+			@tmp = @{ $info{$k}{contents} } = &dir_files($config::dirs{$k}{path});
+		}
+
+		# remove ignored files and record parents
+		for my $file(@tmp)
+		{
+			$parent_hash{$file} = $k;
+			@{ $info{$k}{contents} } = grep { $_ ne $file } @{ $info{$k}{contents} } if defined $ignore_hash{$file};
 		}
 
 		$info{$k}{count} = scalar(@{ $info{$k}{contents} } );
 
 		print "[$k = $info{$k}{count}]" if $config::app{main}{debug};
 
-		foreach my $key (keys %{$info{$k}{history_hash}})
+		foreach my $key (keys %history_hash)
 		{
 			if (! -f $key)
 			{
 				print "\n* WARNING: $key has been moved or deleted\n";
-				delete $info{$k}{history_hash}{$key};
-			}
-			if (! &is_in_array($key, $info{$k}{history}))
-			{
-				print "\n* WARNING: $key is in history hash but not in history array. Deleting from history hash\n";
-				delete $info{$k}{history_hash}{$key};
+				delete $history_hash{$key};
 			}
 		}
 
 		@tmp = ();
 		for my $key (@{$info{$k}{history}})
 		{
-			if(!defined $info{$k}{history_hash}{$key})
+			if(!defined $history_hash{$key})
 			{
 				print "\n* WARNING: $key is in history array but not in history hash. Deleting from history array\n";
 				next;
@@ -554,19 +573,29 @@ sub load_playlist
 
 	print " done.\n";
 
-	# now cleanup the hash file
+	# now cleanup the info hash
 	for my $key (keys %info)
 	{
 		my $found = 0;
 		for my $k2(keys %config::dirs)
 		{
-			if ($key eq $k2 && $config::dirs{$key}{enabled})
+			if ($key eq $k2)
 			{
 				$found++;
 				last;
 			}
 		}
-		delete $info{$key} if !$found;
+		if (!$found)
+		{
+			delete $info{$key};
+			next;
+		}
+
+		my @fields = ('history', 'contents', 'count');
+		for my $key2 (keys %{$info{$key}})
+		{
+			delete $info{$key}{$key2} if !&is_in_array($key2, \@fields);
+		}
 	}
 }
 

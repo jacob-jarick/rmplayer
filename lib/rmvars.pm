@@ -29,6 +29,9 @@ $lock_file
 $ignore_file
 $history_file
 $info_file
+
+$config_file
+$dirs_file
 );
 
 our $version		= '5.WIP';
@@ -55,6 +58,10 @@ our $cmd_file		= "$home/data/commands.txt";;
 our $ignore_file	= "$home/data/ignore_list.txt";
 our $history_file	= "$home/data/history.txt";
 our $info_file		= "$home/data/data.json";
+
+our $config_file	= "$home/config.ini";
+our $dirs_file		= "$home/dirs.ini";
+
 
 sub get_home
 {

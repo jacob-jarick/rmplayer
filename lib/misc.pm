@@ -2,7 +2,7 @@
 package misc;
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(ci_sort get_home null_file save_file_arr save_file file_append readf readf_clean readsf readjf readsjf is_in_array get_file_info get_file_path get_file_parent_dir get_file_name get_file_ext dir_files);
+@EXPORT = qw(ci_sort get_home null_file save_file_arr save_file file_append readf readf_clean readsf readjf readsjf is_in_array get_file_info get_file_path get_file_parent_dir get_file_name get_file_ext dir_files dir_files_recursive);
 
 use strict;
 use warnings;
@@ -264,6 +264,28 @@ sub get_file_ext
 		return ($1, $2);
 	}
 	return undef;
+}
+
+sub dir_files_recursive
+{
+	my $dir			= shift;
+
+	opendir(DIR, $dir) or die "error could not read dir '$dir' $!\n";
+	my @dir_list = CORE::readdir(DIR);
+	closedir DIR;
+	my @dirlist_clean = &dir_files($dir);
+
+	# -- make sure we dont have . and .. in array --
+	for my $item(@dir_list)
+	{
+		next if $item eq '.' || $item eq '..';
+
+		my $path = "$dir/$item";
+		$path =~ s/\\/\//g;
+		next if ! -d $path;
+		push @dirlist_clean, &dir_files($path);
+	}
+	return @dirlist_clean;
 }
 
 # lists files ONLY

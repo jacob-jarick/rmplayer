@@ -400,9 +400,9 @@ sub r_select2
 
 	@tmp = ();
 
-	for my $f ( @{$info{$dir}{'contents'}} )
+	for my $f ( @{$info{$dir}{contents}} )
 	{
-		next if defined $info{$dir}{'history_hash'}{$f};
+		next if &is_in_array($f, $info{$dir}{history});
 		push @tmp, $f;
 	}
 
