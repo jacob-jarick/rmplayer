@@ -33,8 +33,6 @@ $dir_defaults{weight}		= 100;
 $dir_defaults{filter}		= '';
 $dir_defaults{ignore_filter}	= '';
 
-
-
 sub save
 {
 	WriteINI ($config_file,	\%app);
