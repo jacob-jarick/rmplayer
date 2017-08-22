@@ -22,6 +22,7 @@ $app{main}{sync_every}		= 1;
 $app{main}{debug}		= 0;
 $app{main}{kill_cmd}		= '';
 $app{main}{player_cmd}		= '';
+$app{main}{webserver}		= 1;
 
 our %dir_defaults		= ();
 
@@ -61,6 +62,11 @@ sub load
 		print "creating '$config_file'\n";
 		WriteINI ($config_file, \%app);
 	}
+	$app{main}{webserver}		= 0	if $app{main}{webserver} !~ /^(0|1)$/;
+	$app{main}{sync_every}		= 3	if $app{main}{sync_every} !~ /^\d+$/;
+	$app{main}{play_count_limit}	= 0	if $app{main}{play_count_limit} !~ /^\d+$/;
+	$app{main}{debug}		= 0	if $app{main}{debug} !~ /^(0|1)$/;
+
 
 	if (! -f $dirs_file)
 	{
@@ -77,9 +83,11 @@ sub load
 			$dirs{$k}{$k2} = $dir_defaults{$k2};
 			$dirs{$k}{$k2} = $hash{$k}{$k2} if defined $hash{$k}{$k2};
 		}
-		$dirs{$k}{weight} = 100	if $dirs{$k}{weight} !~ /^\d+$/;
-		$dirs{$k}{weight} = 100	if $dirs{$k}{weight} > 100;
-		$dirs{$k}{weight} = 1	if $dirs{$k}{weight} < 1;
+		$dirs{$k}{weight}	= 100	if $dirs{$k}{weight} !~ /^\d+$/;
+		$dirs{$k}{weight}	= 100	if $dirs{$k}{weight} > 100;
+		$dirs{$k}{weight}	= 1	if $dirs{$k}{weight} < 1;
+
+		$dirs{$k}{recursive}	= 0	if $dirs{$k}{recursive} !~ /^(0|1)$/;
 	}
 }
 

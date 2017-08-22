@@ -21,6 +21,9 @@ use misc;
 use config;
 use jhash;
 
+use threads ('yield', 'stack_size' => 64*4096, 'exit' => 'threads_only', 'stringify');
+use threads::shared;
+
 # =============================================================================
 # Vars
 # =============================================================================
@@ -105,8 +108,20 @@ if(-f $lock_file)	# check if there is already a lockfile
 }
 # start webserver
 
-our $server_pid		= 0;
-$server_pid		= webuiserver->new(8080)->background();
+our $server_pid :shared;
+$server_pid = 0;
+if($config::app{main}{webserver})
+{
+# 	$server_pid = webuiserver->new(8080)->background();
+	my $thr = threads->create('start_thread');
+	$thr->detach();
+}
+
+sub start_thread
+{
+	$server_pid = webuiserver->new(8080)->background();
+
+}
 
 # =============================================================================
 # Print start message
