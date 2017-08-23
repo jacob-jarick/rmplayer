@@ -123,8 +123,28 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
-		-padx =>	2
 	);
+	$tab1->Button
+	(
+		-text=>'Set to Default',
+		-command => sub
+		{
+			if(lc $^O eq 'mswin32')
+			{
+				$config::app{main}{player_cmd} = '"C:/Program Files (x86)/VideoLAN/VLC/vlc.exe"';
+			}
+			else
+			{
+				$config::app{main}{player_cmd} = '/usr/bin/mpv';
+			}
+		}
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+
 	$tab1->Button
 	(
 		-text=>'Clear',
@@ -137,7 +157,6 @@ sub display
 		-row=>		$row++,
 		-column=>	$col++,
 		-sticky=>	'nw',
-		-padx =>	2
 	);
 
 
@@ -159,6 +178,7 @@ sub display
 		-column=>	$col++,
 		-sticky=>	'nw',
 	);
+	$col++;
 	$tab1->Button
 	(
 		-text=>'Set to Default',
@@ -178,7 +198,6 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
-		-padx =>	2
 	);
 	$tab1->Button
 	(
@@ -192,7 +211,6 @@ sub display
 		-row=>		$row++,
 		-column=>	$col++,
 		-sticky=>	'nw',
-		-padx =>	2
 	);
 
 	$col = 0;
@@ -202,7 +220,6 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
-		-padx=>		2
 	);
 
 	$tab1->Spinbox
@@ -214,10 +231,22 @@ sub display
 		-width=>	8
 	)-> grid
 	(
-		-row=>		$row++,
-		-column=>	$col,
+		-row=>		$row,
+		-column=>	$col++,
 		-sticky=>	'nw',
 	);
+	$col++;
+	$tab1->Button
+	(
+		-text=>'Set to Default',
+		-command => sub { $config::app{main}{sync_every} = 3; }
+	)-> grid
+	(
+		-row=>		$row++,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+
 	$col = 0;
 	$tab1->Label(-text=>'Play Count Limit')-> grid
 	(
@@ -230,14 +259,25 @@ sub display
 	$tab1->Spinbox
 	(
 		-textvariable=>	\$config::app{main}{play_count_limit},
-		-from=>		1,
-		-to=>		10,
+		-from=>		0,
+		-to=>		50,
 		-increment=>	1,
 		-width=>	8
 	)-> grid
 	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+	$col++;
+	$tab1->Button
+	(
+		-text=>'Set to Default',
+		-command => sub { $config::app{main}{play_count_limit} = 0; }
+	)-> grid
+	(
 		-row=>		$row++,
-		-column=>	$col,
+		-column=>	$col++,
 		-sticky=>	'nw',
 	);
 
@@ -291,6 +331,7 @@ sub display
 				&config::load;
 				$main->destroy;
 				&display;
+				&plot;
 			}
 		)-> grid
 		(
@@ -445,7 +486,7 @@ sub display
 
 			if($dd_dir)
 			{
-				my $name = $dd_dir;
+				my $name = lc $dd_dir;
 				$name =~ s/^.*(\\|\/)//;
 				$config::dirs{$name}{path}	= $dd_dir;
 				$config::dirs{$name}{enabled}	= 1;
@@ -453,6 +494,7 @@ sub display
 				$main->destroy;
 				&config::load;
 				&display;
+				&plot;
 			}
 
 		}
