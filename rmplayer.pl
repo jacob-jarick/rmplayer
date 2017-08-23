@@ -247,7 +247,7 @@ sub history_add
 
 	push @{ $info{$parent}{history} }, $file;
 	$history_hash{$file} = 1;
-	&trim_history($parent);
+	&config::trim_history($parent);
 	&file_append($history_file, "$file\n");
 	&misc::trim_log($history_file, 10);
 }
@@ -305,7 +305,7 @@ sub random_select
 	if (defined $info{$dir}{history} && scalar @{$info{$dir}{history}} >= $info{$dir}{count})
 	{
 		print "WARNING: unexpected need to trim history for '$dir' possible reasons are files have been moved/deleted or rmplayer error.\n";
-		&trim_history($dir);
+		&config::trim_history($dir);
 	}
 
 	my @tmp2 = @tmp;
