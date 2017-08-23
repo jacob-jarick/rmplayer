@@ -7,7 +7,6 @@ use lib			"$Bin/lib";
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw(
-$stop_count
 $windows
 $home
 $cmd_file
@@ -50,7 +49,6 @@ $rand_range
 our $version		= '5.WIP';
 our $windows		= 0;
 our $home 		= &get_home;
-our $stop_count		= 0;
 
 our $media_ext		= "mp3|mp4|mpc|mpg|mpeg|avi|asf|wmf|wmv|ogg|ogm|rm|rmvb|mkv|mov";
 
@@ -78,12 +76,11 @@ our $dirs_file		= "$home/dirs.ini";
 our %parent_hash	= ();
 our %history_hash	= ();
 our %last_modtime	= ();
-
 our %ignore_hash	= ();
-
 our %dir_stack		= ();
 our %info		= ();
 our %weight_hash	= ();
+
 our $percent		= 0.90;
 our $rand_range		= 1;
 

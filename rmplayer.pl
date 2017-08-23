@@ -58,9 +58,10 @@ my $help_txt = "Run and access web ui from http://localhost:8080\n";
 
 if(-f $lock_file)	# check if there is already a lockfile
 {
-	my @tmp = &readf($lock_file);
-	my $pid = $tmp[0];
-	my $exists = 0;
+	my @tmp		= &readf($lock_file);
+	my $pid		= $tmp[0];
+	my $exists	= 0;
+
 	if($pid =~ /^(\d+)/)
 	{
 		$pid = $1;
@@ -122,14 +123,10 @@ print
 *
 * Version:		$version
 * OS:			$^O
-*
-* Web UI:		http://localhost:8080/
 * Web UI PID:		$server_pid
-*
 * Daemon PID:		$$
 *
-* Player cmd:		$config::app{main}{player_cmd}
-* Kill Player cmd:	$config::app{main}{kill_cmd}
+* Web UI:		http://localhost:8080/
 *
 **=============================================================**
 $ascii
@@ -145,7 +142,8 @@ our $STOP			= 0;
 
 while(1)
 {
-	&check_cmds;
+	my $file = '';
+
 	#----------------------------------------------
 	# stop check
 
@@ -156,35 +154,36 @@ while(1)
 			$FIRST_STOP = 0;
 			print "* STOPPED. Waiting to Resume";
 		}
+		$FIRST_STOP = 1;
+
+		&check_cmds;
+		&check_keyboard;
+
 		next;
 	}
-	$FIRST_STOP = 1;
 
 	#----------------------------------------------
 	# check play count limit
 
 	$play_count++;
-	if($stop_count && $stop_count < $play_count)
+	if($config::app{main}{play_count_limit} && $config::app{main}{play_count_limit} < $play_count)
 	{
-		print "* Hit play limit $stop_count. stopping playback after next file.\n";
-		$stop_count = 0;
+		print "* Hit play limit $config::app{main}{play_count_limit}. stopping playback after next file.\n";
+		$config::app{main}{play_count_limit} = 0;
 		$STOP = 1;
 	}
 
-	# --------------------------------------------
-	# queue or randomly select play file
 
-	my $file = '';
 	$file = &check_que;
 	$file = &random_select if($file eq '');
 
 	die "ERROR: could not find any files\n" if $file eq '';
 
-	&play($file);
 	&history_add($file);
-	&check_keyboard($file);
+	&play($file);
+	&check_keyboard;
+	&check_cmds;
 	&jhash::save($config::info_file, \%info) if($play_count % $config::app{main}{sync_every} == 0);
- 	sleep(1);
 }
 &rmp_exit;
 
@@ -219,20 +218,12 @@ sub get_keyboard
 
 sub check_keyboard
 {
-	my $file = shift;
 	my $key = &get_keyboard;
 	return if ! defined $key || $key eq '';
-	if($key eq 'q')
+	if(lc $key eq 'q')
 	{
 		print "* Got the quit key, quitting :)\n\nThankyou come again.\n\n";
 		&rmp_exit;
-	}
-
-	# check for files to ignore
-	if($key eq 'Q')
-	{
-		print "* Got the ignore key, ignoring $file.\n\n";
-		&update_ignore($file);
 	}
 }
 
@@ -308,8 +299,8 @@ sub random_select
 		&config::trim_history($dir);
 	}
 
-	my @tmp2 = @tmp;
-	@tmp = ();
+	my @tmp2	= @tmp;
+	@tmp		= ();
 
 	for my $file(@tmp2)
 	{
@@ -317,9 +308,9 @@ sub random_select
 		push @tmp, $file;
 	}
 
-	my $list_count = scalar @tmp;
-	my $rand = int(rand($list_count));
-	$play_file = $tmp[$rand] if defined $tmp[$rand];
+	my $list_count	= scalar @tmp;
+	my $rand	= int(rand($list_count));
+	$play_file	= $tmp[$rand] if defined $tmp[$rand];
 
 	if($play_file eq '')
 	{
@@ -380,7 +371,7 @@ sub check_cmds
 
 		elsif($cmd =~ /^PLAY/)
 		{
-			$stop_count = $play_count = 0;
+			$config::app{main}{play_count_limit} = $play_count = 0;
 
 			print "*\n* Resuming playback\n" if $STOP;
 			print "*\n* Skipping to next file\n" if !$STOP;
@@ -418,9 +409,9 @@ sub check_cmds
 		}
 		elsif($cmd =~ /^LIMIT=(\d+)/)
 		{
-			$stop_count = $1;
+			$config::app{main}{play_count_limit} = $1;
 			$play_count = 0;
-			print "* INFO: Playback will stop after $stop_count files\n";
+			print "* INFO: Playback will stop after $config::app{main}{play_count_limit} files\n";
 		}
 		elsif($cmd =~ /^EXIT/)
 		{
