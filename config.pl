@@ -12,6 +12,7 @@ use Config::IniHash;
 use Tk::ROText;
 use Data::Dumper::Concise;
 use Tk::Spinbox;
+use Tk::NoteBook;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
@@ -63,20 +64,221 @@ sub display
 		-height => 10,
 	)->pack
 	(
-		-side => 'top',
-		-expand=> 1,
-		-fill => 'both',
-		-anchor => 'n'
+		-side=>		'top',
+		-expand=>	1,
+		-fill=>		'both',
+		-anchor=>	'n'
+	);
+        my $book = $frame_top->NoteBook()
+        ->pack
+	(
+		-side=>		'top',
+		-expand=>	1,
+		-fill=>		'both',
+		-anchor=>	'n'
 	);
 
+	# ----------------------------------------------------------------------------------------------------------
+	# Main prefences tab
+
+	my $tab1 = $book->add
+	(
+		'Sheet 1',
+		-label=>'Main'
+	);
 	my $col = 0;
+	$row = 0;
+
+	$tab1->Label(-text=>'Player Command')
+	-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+	$tab1->Entry
+	(
+		-textvariable=>	\$config::app{main}{player_cmd},
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+
+	$tab1->Button
+	(
+		-text=>'Select Player',
+		-command => sub
+		{
+			&select_player;
+		}
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx =>	2
+	);
+	$tab1->Button
+	(
+		-text=>'Clear',
+		-command => sub
+		{
+			$config::app{main}{player_cmd} = '';
+		}
+	)-> grid
+	(
+		-row=>		$row++,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx =>	2
+	);
+
+
+	$col = 0;
+
+	$tab1->Label(-text=>'Kill Player Command')
+	-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+	$tab1->Entry
+	(
+		-textvariable=>	\$config::app{main}{kill_cmd},
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+	$tab1->Button
+	(
+		-text=>'Set to Default',
+		-command => sub
+		{
+			if(lc $^O eq 'mswin32')
+			{
+				$config::app{main}{kill_cmd} = 'taskkill /im vlc.exe';
+			}
+			else
+			{
+				$config::app{main}{kill_cmd} = 'killall mpv';
+			}
+		}
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx =>	2
+	);
+	$tab1->Button
+	(
+		-text=>'Clear',
+		-command => sub
+		{
+			$config::app{main}{kill_cmd} = '';
+		}
+	)-> grid
+	(
+		-row=>		$row++,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx =>	2
+	);
+
+	$col = 0;
+
+	$tab1->Label(-text=>'Sync Data Every N Plays')-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx=>		2
+	);
+
+	$tab1->Spinbox
+	(
+		-textvariable=>	\$config::app{main}{sync_every},
+		-from=>		1,
+		-to=>		10,
+		-increment=>	1,
+		-width=>	8
+	)-> grid
+	(
+		-row=>		$row++,
+		-column=>	$col,
+		-sticky=>	'nw',
+	);
+	$col = 0;
+	$tab1->Label(-text=>'Play Count Limit')-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx=>		2
+	);
+
+	$tab1->Spinbox
+	(
+		-textvariable=>	\$config::app{main}{play_count_limit},
+		-from=>		1,
+		-to=>		10,
+		-increment=>	1,
+		-width=>	8
+	)-> grid
+	(
+		-row=>		$row++,
+		-column=>	$col,
+		-sticky=>	'nw',
+	);
+
+	$col = 0;
+	$tab1->Checkbutton
+	(
+		-text=>		'Debug',
+		-variable=>	\$config::app{main}{debug},
+	)-> grid
+	(
+		-row=>		$row++,
+		-column=>	$col,
+		-sticky=>	'nw',
+	);
+	$tab1->Checkbutton
+	(
+		-text=>		'Web Server',
+		-variable=>	\$config::app{main}{debug},
+	)-> grid
+	(
+		-row=>		$row++,
+		-column=>	$col,
+		-sticky=>	'nw',
+	);
+	$col = 0;
+
+
+	# ----------------------------------------------------------------------------------------------------------
+	# Directories Tab
+
+	$row = 1;
+	$col = 0;
+	my $tab2 = $book->add
+	(
+		'Sheet 2',
+		-label=>'Directories'
+	);
+
+
 	for my $name(&list)
 	{
 		$col = 0;
 
-		$frame_top->Button
+		$tab2->Button
 		(
-			-text=>"Delete",
+			-text=>'Delete',
 			-command => sub
 			{
 				delete $config::dirs{$name};
@@ -87,29 +289,29 @@ sub display
 			}
 		)-> grid
 		(
-			-row=>$row,
-			-column=>$col++,
-			-sticky=>'nw',
-			-padx =>2
+			-row=>		$row,
+			-column=>	$col++,
+			-sticky=>	'nw',
+			-padx =>	2
 		);
 
-		my $text = $frame_top -> ROText
+		my $text = $tab2 -> ROText
 		(
 			-height=>	1,
 			-width=>	20,
 		)
 		-> grid
 		(
-			-row=>$row,
-			-column=>$col++,
-			-sticky=>'nw',
-			-padx =>2
+			-row=>		$row,
+			-column=>	$col++,
+			-sticky=>	'nw',
+			-padx=>		2
 		);
 		$text->Contents($name);
 		my $dir_text;
-		$frame_top->Button
+		$tab2->Button
 		(
-			-text=>"Select",
+			-text=>'Select',
 			-command => sub
 			{
 				my $dd_dir = $main->chooseDirectory
@@ -127,29 +329,29 @@ sub display
 			}
 		)-> grid
 		(
-			-row=>$row,
-			-column=>$col++,
-			-sticky=>'nw',
-			-padx =>2
+			-row=>		$row,
+			-column=>	$col++,
+			-sticky=>	'nw',
+			-padx=>		2
 		);
-		$dir_text = $frame_top->ROText
+		$dir_text = $tab2->ROText
 		(
 			-height=>	1,
 			-width=>	20,
 		)
 		-> grid
 		(
-			-row=>$row,
-			-column=>$col++,
-			-sticky=>'nw',
-			-padx =>2
+			-row=>		$row,
+			-column=>	$col++,
+			-sticky=>	'nw',
+			-padx=>		2
 		);
  		$dir_text->Contents($config::dirs{$name}{path});
 
-		$frame_top->Checkbutton
+		$tab2->Checkbutton
 		(
-			-text=>"Recursive",
-			-variable=>\$config::dirs{$name}{recursive},
+			-text=>		'Recursive',
+			-variable=>	\$config::dirs{$name}{recursive},
 		)-> grid
 		(
 			-row=>		$row,
@@ -157,10 +359,10 @@ sub display
 			-sticky=>	'nw',
 			-padx=>		2
 		);
-		$frame_top->Checkbutton
+		$tab2->Checkbutton
 		(
-			-text=>"Enable",
-			-variable=>\$config::dirs{$name}{enabled},
+			-text=>		'Enable',
+			-variable=>	\$config::dirs{$name}{enabled},
 		)-> grid
 		(
 			-row=>		$row,
@@ -168,7 +370,7 @@ sub display
 			-sticky=>	'nw',
 			-padx=>		2
 		);
-		$frame_top->Label(-text=>'Weight')-> grid
+		$tab2->Label(-text=>'Weight')-> grid
 		(
 			-row=>		$row,
 			-column=>	$col++,
@@ -176,13 +378,13 @@ sub display
 			-padx=>		2
 		);
 
-		my $spinbox = $frame_top->Spinbox
+		my $spinbox = $tab2->Spinbox
 		(
-			-textvariable=>\$config::dirs{$name}{weight},
-			-from=>1,
-			-to=>100,
-			-increment=>1,
-			-width=>8
+			-textvariable=>	\$config::dirs{$name}{weight},
+			-from=>		1,
+			-to=>		100,
+			-increment=>	1,
+			-width=>	8
 		)-> grid
 		(
 			-row=>		$row,
@@ -193,22 +395,21 @@ sub display
 		$row++;
 	}
 
-	my $frame_buttons = $frame_top->Frame
+	my $frame_buttons = $main->Frame
 	(
  		-height => 1,
-	)-> grid
+	)->pack
 	(
-		-row=>		$row,
-		-column=>	0,
-		-columnspan=>	$col,
-		-sticky=>	'nw',
-		-padx=>		2
+		-side=>		'bottom',
+		-expand=>	1,
+		-fill=>		'both',
+		-anchor=>	's'
 	);
 	$col=0;
 
 	$frame_buttons->Button
 	(
-		-text=>		'Add',
+		-text=>		'Add Directory',
 		-command=>	sub
 		{
 			my $dd_dir = $main->chooseDirectory
@@ -244,5 +445,26 @@ sub display
 	)-> grid(-row=>0, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
 }
 
+sub select_player
+{
+	my $filename;
+	if(lc $^O eq 'mswin32')
+	{
+		my $types =
+		[
+			['Applications',	['.exe']	],
+			['All Files',		'*',		],
+		];
+		$filename = $main->getOpenFile(-filetypes => $types);
+	}
+	else
+	{
+		$filename = $main->getOpenFile();
+	}
+	if(defined $filename)
+	{
+		$config::app{main}{player_cmd} = $filename;
+	}
+}
 
 1;
