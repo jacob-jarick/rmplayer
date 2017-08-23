@@ -463,6 +463,8 @@ sub select_player
 	}
 	if(defined $filename)
 	{
+		$filename =~ s/\\/\//g;
+		$filename = "\"$filename\"" if $filename =~ m/\s+/;
 		$config::app{main}{player_cmd} = $filename;
 	}
 }
