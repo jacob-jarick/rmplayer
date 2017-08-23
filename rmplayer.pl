@@ -306,41 +306,38 @@ sub play
 
 sub random_select
 {
-	my $d		= &dir_stack_select;
+	my $dir		= &dir_stack_select;
 	my @tmp		= ();
-	my $rand	= 0;
 	my $play_file	= '';
 
-	for my $f (@{$info{$d}{contents}})
+	for my $file (@{$info{$dir}{contents}})
 	{
-		next if defined $info{$d}{$f};
-		push @tmp, $f;
+		next if defined $info{$dir}{$file};
+		push @tmp, $file;
+	}
+
+	if (defined $info{$dir}{history} && scalar @{$info{$dir}{history}} >= $info{$dir}{count})
+	{
+		print "WARNING: unexpected need to trim history for '$dir' possible reasons are files have been moved/deleted or rmplayer error.\n";
+		&trim_history($dir);
 	}
 
 	my @tmp2 = @tmp;
 	@tmp = ();
 
-	if (defined $info{$d}{history} && scalar @{$info{$d}{history}} >= $info{$d}{count})
+	for my $file(@tmp2)
 	{
-		print "WARNING: unexpected need to trim history for '$d' possible reasons are files have been moved/deleted or rmplayer error.\n";
-		&trim_history($d);
+		next if ( defined $history_hash{$file});
+		push @tmp, $file;
 	}
 
-	for my $f(@tmp2)
-	{
-		next if ( defined $history_hash{$f});
-		push @tmp, $f;
-	}
-
-	my $list_count = @tmp;
-	$rand = int(rand($list_count));
+	my $list_count = scalar @tmp;
+	my $rand = int(rand($list_count));
 	$play_file = $tmp[$rand] if defined $tmp[$rand];
 
-	if(! defined $play_file || $play_file eq '')
+	if($play_file eq '')
 	{
-		print "ERROR: random_select: failed to select a file from '$d',  \$play_file is undef, Array count: $list_count, dumping selection array\n";
-		print Dumper(\@tmp);
-		exit;
+		&quit("ERROR: random_select: failed to select a file from '$dir',  \$play_file is undef, Array count: $list_count, dumping selection array\n" . Dumper(\@tmp));
 	}
 
 	return $play_file;
@@ -361,26 +358,16 @@ sub check_que
 
 	$last_modtime{$que_file} = $mod_time;
 
-	my @tmp	= &readf($que_file);
-	my $que	= '';
+	my @tmp		= &readf($que_file);
+	$play_file	= $tmp[0]		if defined $tmp[0];
 
-	$que = $tmp[0] if defined $tmp[0];
+	return '' if $play_file = '';
 
-	if($que ne '')
-	{
-		# check if its a user qued file
-		if(!-f $que)
-		{
-			print "*\n ERROR!, \"$que\" does not exist\n";
-		}
-		else
-		{
-			print "* QUEUED: '$que'\n";
-			$play_file = $que;
-			shift @tmp;
-		}
-		&save_file_arr($que_file, \@tmp);
-	}
+	shift @tmp;
+ 	&save_file_arr($que_file, \@tmp);
+
+ 	print "* QUEUED: '$play_file'\n";
+
 	return $play_file;
 }
 
@@ -396,9 +383,7 @@ sub check_cmds
 
 	$last_modtime{$cmd_file} = $mod_time;
 
-	my @tmp		= &readf($cmd_file);
-
-	for my $cmd (@tmp)
+	for my $cmd (&readf($cmd_file))
 	{
 		next if $cmd eq '' || $cmd =~ /^(\s|\n|\r)*$/;
 		if($cmd =~ /^STOP/)
@@ -461,7 +446,6 @@ sub check_cmds
 		{
 			print "*\n* WARNING: Unknown command found: '$cmd'\n";
 		}
-
 	}
 	&null_file($cmd_file);	# zero file
 }
@@ -475,8 +459,6 @@ sub update_ignore
 		print "* ERROR: update_ignore '$file' is not a file\n";
 		&rmp_exit;
 	}
-
-	my $f = $file;
 	&file_append($ignore_file, $file);
 }
 
@@ -499,22 +481,19 @@ sub trim_history
 	)
 	{
 		# deduct a random percentage between 1-$bump% (stops it trimming constantly)
-		my $bump = 5;
+		my $bump = 5 / 100;
 		# if dir has small amount of files increase bump size.
-		$bump = 10 if $info{$dir}{count} < 100;
+		$bump = 10 / 100 if $info{$dir}{count} < 100;
 
-		my $c = (1+rand($bump)) / 100;
-		my $trim_n = int((1-($percent-$c)) * $info{$dir}{count});	# get amount of files to trim
-		$trim_n = 2 if $trim_n <= 1;	# always trim at least 2 files
+		my $trim_count = int((1-($percent-$bump)) * $info{$dir}{count});	# get amount of files to trim
+		$trim_count = 2 if $trim_count <= 1;	# always trim at least 2 files
 
-		print "DEBUG: Trimming History for '$dir', removing $trim_n entrys.\n" if $config::app{main}{debug};
+		print "DEBUG: Trimming History for '$dir', removing $trim_count entrys.\n" if $config::app{main}{debug};
 
-		$c = 0;
-		while($c <= $trim_n)
+		for my $c (0 .. $trim_count)
 		{
 			my $f = shift(@{$info{$dir}{history}});	# remove an entry from the front of array
 			delete $history_hash{$f} if defined $history_hash{$f};
-			$c++;
 		}
 	}
 }
@@ -620,10 +599,10 @@ sub load_ignore_list
 {
 	my @ignore = &readf_clean($ignore_file);
 
-	for my $f (@ignore)
+	for my $file (@ignore)
 	{
-		print "DEBUG: adding '$f' to ignore hash\n" if $config::app{main}{debug};
-		$ignore_hash{$f} = 1;
+		print "DEBUG: adding '$file' to ignore hash\n" if $config::app{main}{debug};
+		$ignore_hash{$file} = 1;
 	}
 }
 
@@ -643,6 +622,8 @@ sub load_dir_stack
 
 		&quit("ERROR load_dir_stack: \$config::dirs{$k}{weight} is undef") if ! defined $config::dirs{$k}{weight};
 		&quit("ERROR load_dir_stack: \$info{$k}{count} is undef" . Dumper(\%info) ) if ! defined $info{$k}{count};
+
+		next if !$info{$k}{count};
 
 		$index += int( ($config::dirs{$k}{weight}/100) * $info{$k}{count});
 		$dir_stack{$k} = $index;
