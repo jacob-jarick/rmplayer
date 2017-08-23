@@ -32,6 +32,19 @@ $info_file
 
 $config_file
 $dirs_file
+
+%parent_hash
+%history_hash
+%last_modtime
+
+%ignore_hash
+
+%dir_stack
+%info
+$percent
+%weight_hash
+
+$rand_range
 );
 
 our $version		= '5.WIP';
@@ -61,6 +74,18 @@ our $info_file		= "$home/data/data.json";
 
 our $config_file	= "$home/config.ini";
 our $dirs_file		= "$home/dirs.ini";
+
+our %parent_hash	= ();
+our %history_hash	= ();
+our %last_modtime	= ();
+
+our %ignore_hash	= ();
+
+our %dir_stack		= ();
+our %info		= ();
+our %weight_hash	= ();
+our $percent		= 0.90;
+our $rand_range		= 1;
 
 
 sub get_home

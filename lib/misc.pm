@@ -12,6 +12,13 @@ use File::stat;
 use Data::Dumper::Concise;
 use List::MoreUtils qw(uniq);
 
+use FindBin qw/$Bin/;
+use lib			$Bin;
+use lib			"$Bin/lib";
+
+use rmvars;
+
+
 sub ci_sort
 {
 	return sort { lc($a) cmp lc($b) } @_;
@@ -335,7 +342,7 @@ sub dir_files
 		my $path = "$dir/$item";
 		$path =~ s/\\/\//g;
 		next if -d $path;
-		next if $path !~ /\.$main::media_ext$/i;
+		next if $path !~ /\.$media_ext$/i;
 
 		push @dirlist_clean, $path;
 	}

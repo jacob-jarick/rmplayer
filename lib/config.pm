@@ -10,6 +10,7 @@ use lib			$Bin;
 use lib			"$Bin/lib";
 
 use rmvars;
+use misc;
 
 use Config::IniHash;
 
@@ -71,7 +72,7 @@ sub load
 		print "ERROR: no dirs.ini file, please create before proceeding\n";
 		die "dirs file '$dirs_file' not found\n";
 	}
-	my $ini	= ReadINI $dirs_file;
+	my $ini		= ReadINI $dirs_file;
 	my %hash	= %{$ini};
 
 	for my $k(keys %hash)
@@ -91,6 +92,178 @@ sub load
 	}
 }
 
+sub load_info
+{
+	my $ref = &jhash::load($info_file);
+	%info = %$ref if defined $ref;
+	&config::load_playlist;
+	&config::load_dir_stack;
+}
+
+sub load_playlist
+{
+	print "LOADING DIRS: ";
+	%parent_hash = ();
+	for my $k (keys %dirs)
+	{
+		&quit("load_playlist: \$dirs{$k}{path} is undef")			if ! defined $dirs{$k}{path};
+		&quit("ERROR: dirs.ini invalid path for '$k' - '$dirs{$k}{path}'\n")	if !-d $dirs{$k}{path};
+		print '.';
+
+		my @tmp = ();
+
+		# setup history hash
+		for my $file(@{ $info{$k}{history} })
+		{
+			if(!-f $file)
+			{
+				print "\n* WARNING: $file has been moved or deleted\n";
+				next;
+			}
+			push @tmp, $file;
+			$history_hash{$file} = 1;
+		}
+		@{ $info{$k}{history} } = @tmp;
+
+		# load dir contents
+		if($dirs{$k}{recursive})
+		{
+			@tmp = @{ $info{$k}{contents} } = &dir_files_recursive($dirs{$k}{path});
+		}
+		else
+		{
+			@tmp = @{ $info{$k}{contents} } = &dir_files($dirs{$k}{path});
+		}
+
+		# remove ignored files and record parents
+		for my $file(@tmp)
+		{
+			$parent_hash{$file} = $k;
+			@{ $info{$k}{contents} } = grep { $_ ne $file } @{ $info{$k}{contents} } if defined $ignore_hash{$file};
+		}
+
+		$info{$k}{count} = scalar(@{ $info{$k}{contents} } );
+
+		print "[$k = $info{$k}{count}]" if $app{main}{debug};
+
+		foreach my $key (keys %history_hash)
+		{
+			if (! -f $key)
+			{
+				print "\n* WARNING: $key has been moved or deleted\n";
+				delete $history_hash{$key};
+			}
+		}
+
+		@tmp = ();
+		for my $key (@{$info{$k}{history}})
+		{
+			if(!defined $history_hash{$key})
+			{
+				print "\n* WARNING: $key is in history array but not in history hash. Deleting from history array\n";
+				next;
+			}
+			push @tmp, $key;
+		}
+		@{$info{$k}{history}} = @tmp;
+ 		&trim_history($k); # trim history on playlist load
+	}
+
+	print " done.\n";
+
+	# now cleanup the info hash
+	for my $key (keys %info)
+	{
+		my $found = 0;
+		for my $k2(keys %dirs)
+		{
+			if ($key eq $k2)
+			{
+				$found++;
+				last;
+			}
+		}
+		if (!$found)
+		{
+			delete $info{$key};
+			next;
+		}
+
+		my @fields = ('history', 'contents', 'count');
+		for my $key2 (keys %{$info{$key}})
+		{
+			delete $info{$key}{$key2} if !&is_in_array($key2, \@fields);
+		}
+	}
+}
+
+sub load_dir_stack
+{
+	my $index	= 0;
+	%dir_stack	= ();
+	%weight_hash	= ();
+
+	print "LOAD DIE STACK\n" if $app{main}{debug};
+	for my $k(keys %dirs)
+	{
+		if (!$dirs{$k}{enabled})
+		{
+			print "DEBUG: ignoring disabled dir '$k'\n";
+			next;
+		}
+
+		&quit("ERROR load_dir_stack: \$dirs{$k}{weight} is undef") if ! defined $dirs{$k}{weight};
+		&quit("ERROR load_dir_stack: \$info{$k}{count} is undef" . Dumper(\%info) ) if ! defined $info{$k}{count};
+
+		next if !$info{$k}{count};
+
+		my $w = int( ($dirs{$k}{weight}/100) * $info{$k}{count});
+		$weight_hash{$k} = $w;
+
+		$index += $w;
+		$dir_stack{$k} = $index;
+		print "'$k' = $dir_stack{$k}\n" if $app{main}{debug};
+	}
+	$rand_range = $index;
+	if ($app{main}{debug})
+	{
+		print "DEBUG: load_dir_stack: highest result for random select is $index\n";
+	}
+}
+
+# ---------------------------------------------------
+# check to see if we need to trim dirs history
+
+sub trim_history
+{
+	my $dir = shift;
+
+	my $history_length = 0;
+	   $history_length = scalar(@{$info{$dir}{history}}) if defined $info{$dir}{history};
+
+	my $percent_played = $history_length / $info{$dir}{count};
+
+	if
+	(
+		$percent_played > $percent ||
+		$history_length >= ($info{$dir}{count} - 2)		# sometimes a dir has a tiny amount of files (eg 6) resulting in history not being trimmed with 5 out of 6 being played as % played is only ~83%
+	)
+	{
+		my $bump	= 5 / 100;						# deduct a random percentage between 1-$bump% (stops it trimming constantly)
+		$bump		= 10 / 100	if $info{$dir}{count} < 100;		# if dir has small amount of files increase bump size.
+
+		my $trim_count	= int((1-($percent-$bump)) * $info{$dir}{count});	# get amount of files to trim
+		$trim_count	= 2		if $trim_count <= 1;			# always trim at least 2 files
+
+		print "DEBUG: Trimming History for '$dir', removing $trim_count entrys.\n" if $app{main}{debug};
+
+		for my $c (0 .. $trim_count)
+		{
+			my $f = shift(@{$info{$dir}{history}});	# remove an entry from the front of array
+			delete $history_hash{$f} if defined $history_hash{$f};
+		}
+	}
+}
 
 
 1;

@@ -13,17 +13,22 @@ use Tk::ROText;
 use Data::Dumper::Concise;
 use Tk::Spinbox;
 use Tk::NoteBook;
+use Tk::Chart::Pie;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use rmvars;
 use misc;
-use config;
 use jhash;
+use config;
 
 our $main;
+my $chart;
 &config::load;
+&config::load_playlist;
+&config::load_dir_stack;
 &display;
+&plot;
 MainLoop;
 
 exit;
@@ -384,7 +389,13 @@ sub display
 			-from=>		1,
 			-to=>		100,
 			-increment=>	1,
-			-width=>	8
+			-width=>	8,
+			-command=>	sub
+			{
+				print "Redraw";
+				&config::load_dir_stack;
+				&plot;
+			}
 		)-> grid
 		(
 			-row=>		$row,
@@ -394,6 +405,19 @@ sub display
 		);
 		$row++;
 	}
+
+	$chart = $main->Pie
+	(
+		-title=>	'Weighted Playlist' . "\n",
+		-background=>	'white',
+		-linewidth=>	2,
+	)->pack
+	(
+		-side=>		'bottom',
+		-expand=>	1,
+		-fill=>		'both',
+		-anchor=>	's'
+	);
 
 	my $frame_buttons = $main->Frame
 	(
@@ -467,6 +491,21 @@ sub select_player
 		$filename = "\"$filename\"" if $filename =~ m/\s+/;
 		$config::app{main}{player_cmd} = $filename;
 	}
+}
+
+sub plot
+{
+	my @names = ();
+	my @values = ();
+	for my $key(sort {lc $a cmp lc $b} keys %weight_hash)
+	{
+		push @names, $key;
+		push @values, $weight_hash{$key};
+	}
+
+	my @data = ([@names], [@values]);
+
+	$chart->plot( \@data );
 }
 
 1;
