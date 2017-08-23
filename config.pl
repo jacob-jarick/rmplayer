@@ -392,7 +392,7 @@ sub display
 			-width=>	8,
 			-command=>	sub
 			{
-				print "Redraw";
+# 				print "Redraw";
 				&config::load_dir_stack;
 				&plot;
 			}
@@ -409,8 +409,10 @@ sub display
 	$chart = $main->Pie
 	(
 		-title=>	'Weighted Playlist' . "\n",
-		-background=>	'white',
-		-linewidth=>	2,
+		-linewidth => 3,
+		-background=> '#bababa',
+		-titlefont=> '{Arial} 16 {bold}',
+		-legendfont=> '{Arial} 12 {bold}',
 	)->pack
 	(
 		-side=>		'bottom',
@@ -497,9 +499,17 @@ sub plot
 {
 	my @names = ();
 	my @values = ();
+
+	my $total = 0;
+	for my $key(keys %weight_hash)
+	{
+		$total += $weight_hash{$key};
+	}
+
 	for my $key(sort {lc $a cmp lc $b} keys %weight_hash)
 	{
-		push @names, $key;
+		my $p = int(100 * ($weight_hash{$key} / $total) );
+		push @names, "$key - $p%";
 		push @values, $weight_hash{$key};
 	}
 

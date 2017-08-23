@@ -203,7 +203,7 @@ sub load_dir_stack
 	%dir_stack	= ();
 	%weight_hash	= ();
 
-	print "LOAD DIE STACK\n" if $app{main}{debug};
+# 	print "LOAD DIR STACK\n" if $app{main}{debug};
 	for my $k(keys %dirs)
 	{
 		if (!$dirs{$k}{enabled})
@@ -222,12 +222,12 @@ sub load_dir_stack
 
 		$index += $w;
 		$dir_stack{$k} = $index;
-		print "'$k' = $dir_stack{$k}\n" if $app{main}{debug};
+# 		print "'$k' = $dir_stack{$k}\n" if $app{main}{debug};
 	}
 	$rand_range = $index;
 	if ($app{main}{debug})
 	{
-		print "DEBUG: load_dir_stack: highest result for random select is $index\n";
+# 		print "DEBUG: load_dir_stack: highest result for random select is $index\n";
 	}
 }
 

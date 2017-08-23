@@ -9,8 +9,11 @@ my $mw = MainWindow->new( -title => 'Tk::Chart::Pie example', );
 my $chart = $mw->Pie
 (
 	-title=> 'Weighted Playlist' . "\n",
-	-background=> 'white',
-	-linewidth => 2,
+
+	-linewidth => 3,
+	-background=> '#bababa',
+	-titlefont=> '{Arial} 16 {bold}',
+	-legendfont=> '{Arial} 12 {bold}',
 )->pack(-fill=>"both", -expand=>1);
 
 my @data = (
