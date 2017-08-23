@@ -306,7 +306,7 @@ sub get_sub_dirs
 		my $path = "$dir/$item";
 		$path =~ s/\\/\//g;
 		next if !-d $path;
-		print "path = $path\n";
+# 		print "path = $path\n";
 
 		push @subdirs, $path;
 		push @subdirs, &get_sub_dirs($path);

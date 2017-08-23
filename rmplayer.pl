@@ -300,7 +300,7 @@ sub play
 		$cmd = "cmd /c \"$config::app{main}{player_cmd} \"$play_file\"\" > NUL" ;
 	}
 
-	print "CMD = $cmd\n"  if $config::app{main}{debug};
+# 	print "CMD = $cmd\n"  if $config::app{main}{debug};
 	system($cmd);
 }
 
@@ -361,7 +361,7 @@ sub check_que
 	my @tmp		= &readf($que_file);
 	$play_file	= $tmp[0]		if defined $tmp[0];
 
-	return '' if $play_file = '';
+	return '' if $play_file eq '';
 
 	shift @tmp;
  	&save_file_arr($que_file, \@tmp);
@@ -459,6 +459,7 @@ sub update_ignore
 		print "* ERROR: update_ignore '$file' is not a file\n";
 		&rmp_exit;
 	}
+	$ignore_hash{$file} = 1;
 	&file_append($ignore_file, $file);
 }
 

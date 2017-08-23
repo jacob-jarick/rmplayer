@@ -389,40 +389,39 @@ sub r_select2
 
 	return if !ref $cgi;
 
-	my $dir	= $cgi->param('dir');
-	my $msg	= '';
-	my $c	= 0;
-	my %dh	= ();		# load dir hash from file
-
-	my $ref = &jhash::load($config::info_file);
-	%info = %$ref if defined $ref;
-
-	@tmp = ();
+	my $dir		= $cgi->param('dir');
+	my $msg		= '';
+	my $c		= 1;
+	my %dh		= ();		# load dir hash from file
+	my @tmp		= ();
+	my $ref		= &jhash::load($config::info_file);
+	my %info	= %$ref;
+	my @ignore	= &readf_clean($ignore_file);
 
 	for my $f ( @{$info{$dir}{contents}} )
 	{
 		next if &is_in_array($f, \@{$info{$dir}{history}});
+		next if &is_in_array($f, \@ignore);
 		push @tmp, $f;
 	}
 
 	@tmp = shuffle(@tmp);
-	@tmp = @tmp[0 .. 24] if(scalar(@tmp) > 25);
+	@tmp = @tmp[0 .. 24] if(scalar @tmp > 25);
 
 	for my $file (@tmp)
 	{
-		$c++;
-		my $fn		= $file;
-		$fn		=~ s/^.*(\\|\/)(.*?)$/$2/;
-		$fn		= &format_fn($2);
+		my $name	= $file;
+		$name		=~ m/^.*(\\|\/)(.*?)$/;
+		$name		= &format_fn($2);
 
 		my %h		= ();
-		$h{c}		= $c;
-		$h{fn}		= $fn;
+		$h{c}		= $c++;
+		$h{fn}		= $name;
 		$h{file}	= $file;
 
 		$msg .= join('', &html_insert_hash($queue_form, \%h));
 	}
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, $msg);
 }
 
