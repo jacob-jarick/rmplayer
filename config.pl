@@ -14,6 +14,7 @@ use Data::Dumper::Concise;
 use Tk::Spinbox;
 use Tk::NoteBook;
 use Tk::Chart::Pie;
+use Tk::Graph;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
@@ -22,8 +23,12 @@ use misc;
 use jhash;
 use config;
 
-our $main;
+our $mw;
 my $chart;
+my $chart_frame;
+
+my $chart_type = 'pie';
+
 &config::load;
 &config::load_playlist;
 &config::load_dir_stack;
@@ -49,22 +54,22 @@ sub display
 {
 	my $row = 1;
 
-	$main = new MainWindow; # Main Window
-	$main->title("rmplayer.pl config");
+	$mw = new MainWindow; # Main Window
+	$mw->title("rmplayer.pl config");
 
-	$main->raise;
+	$mw->raise;
 
-	$main->protocol
+	$mw->protocol
 	(
 		'WM_DELETE_WINDOW',
 		sub
 		{
-			$main->destroy;
+			$mw->destroy;
 			exit;
 		}
 	);
 
-	my $frame_top = $main->Frame
+	my $frame_top = $mw->Frame
 	(
 		-height => 10,
 	)->pack
@@ -329,7 +334,7 @@ sub display
 				delete $config::dirs{$name};
 				&config::save;
 				&config::load;
-				$main->destroy;
+				$mw->destroy;
 				&display;
 				&plot;
 			}
@@ -360,7 +365,7 @@ sub display
 			-text=>'Select',
 			-command => sub
 			{
-				my $dd_dir = $main->chooseDirectory
+				my $dd_dir = $mw->chooseDirectory
 				(
 					-initialdir=>$config::dirs{$name}{path},
 					-title=>"Choose a directory"
@@ -433,7 +438,6 @@ sub display
 			-width=>	8,
 			-command=>	sub
 			{
-# 				print "Redraw";
 				&config::load_dir_stack;
 				&plot;
 			}
@@ -447,13 +451,20 @@ sub display
 		$row++;
 	}
 
-	$chart = $main->Pie
+	$chart_frame = $mw->Frame()
+	->pack
 	(
-		-title=>	'Weighted Playlist' . "\n",
-		-linewidth => 3,
-		-background=> '#bababa',
-		-titlefont=> '{Arial} 16 {bold}',
-		-legendfont=> '{Arial} 12 {bold}',
+		-side=>		'bottom',
+		-expand=>	1,
+		-fill=>		'both',
+		-anchor=>	's'
+	);
+
+	&draw_chart;
+
+	my $frame_buttons = $mw->Frame
+	(
+ 		-height => 2,
 	)->pack
 	(
 		-side=>		'bottom',
@@ -462,16 +473,37 @@ sub display
 		-anchor=>	's'
 	);
 
-	my $frame_buttons = $main->Frame
+	$row = 0;
+	$col = 0;
+
+	$frame_buttons->Radiobutton
 	(
- 		-height => 1,
-	)->pack
+		-text=>		'Pie Chart',
+		-variable=>	\$chart_type,
+		-value=>	'pie',
+		-command=>	sub
+		{
+			$chart->destroy;
+			&draw_chart;
+			&plot;
+		}
+	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+
+	$frame_buttons->Radiobutton
 	(
-		-side=>		'bottom',
-		-expand=>	1,
-		-fill=>		'both',
-		-anchor=>	's'
-	);
+		-text=>		'Bar Chart',
+		-variable=>	\$chart_type,
+		-value=>	'bar',
+		-command=>	sub
+		{
+			$chart->destroy;
+			&draw_chart;
+			&plot;
+		}
+
+	)-> grid(-row=>$row, -column=>$col++, -columnspan=>2, -sticky=> 'nw', -padx=> 2 );
+
+	$row++;
 	$col=0;
 
 	$frame_buttons->Button
@@ -479,7 +511,7 @@ sub display
 		-text=>		'Add Directory',
 		-command=>	sub
 		{
-			my $dd_dir = $main->chooseDirectory
+			my $dd_dir = $mw->chooseDirectory
 			(
 				-title=>"Choose a directory"
 			);
@@ -491,26 +523,26 @@ sub display
 				$config::dirs{$name}{path}	= $dd_dir;
 				$config::dirs{$name}{enabled}	= 1;
 				&config::save;
-				$main->destroy;
+				$mw->destroy;
 				&config::load;
 				&display;
 				&plot;
 			}
 
 		}
-	)-> grid(-row=>0, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
 
 	$frame_buttons->Button
 	(
 		-text=>		'Save',
 		-command=>	sub { &config::save; }
-	)-> grid(-row=>0, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
 
 	$frame_buttons -> Button
 	(
 		-text=>		'Close',
-		-command=>	sub { destroy $main; }
-	)-> grid(-row=>0, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+		-command=>	sub { destroy $mw; }
+	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
 }
 
 sub select_player
@@ -523,11 +555,11 @@ sub select_player
 			['Applications',	['.exe']	],
 			['All Files',		'*',		],
 		];
-		$filename = $main->getOpenFile(-filetypes => $types);
+		$filename = $mw->getOpenFile(-filetypes => $types);
 	}
 	else
 	{
-		$filename = $main->getOpenFile();
+		$filename = $mw->getOpenFile();
 	}
 	if(defined $filename)
 	{
@@ -539,6 +571,11 @@ sub select_player
 
 sub plot
 {
+	if($chart_type eq 'bar')
+	{
+		&plot_bar;
+		return;
+	}
 	my @names = ();
 	my @values = ();
 
@@ -558,6 +595,43 @@ sub plot
 	my @data = ([@names], [@values]);
 
 	$chart->plot( \@data );
+}
+
+sub plot_bar
+{
+	$chart->set(\%weight_hash);
+}
+
+sub draw_chart
+{
+	if($chart_type eq 'pie')
+	{
+		$chart = $chart_frame->Pie
+		(
+			-title=>	'Weighted Playlist' . "\n",
+			-linewidth=>	3,
+			-background=>	'#bababa',
+			-titlefont=>	'{Arial} 16 {bold}',
+			-legendfont=>	'{Arial} 12 {bold}',
+		)->pack
+		(
+			-expand=>	1,
+			-fill=>		'both',
+		);
+	}
+	elsif($chart_type eq 'bar')
+	{
+		$chart = $chart_frame->Graph
+		(
+			-type=>		'BARS',
+			-sortnames=>	'alpha',
+			-font=>		'{Arial} 12 {bold}',
+		)->pack
+		(
+			-expand=>	1,
+			-fill=>		'both',
+		);
+	}
 }
 
 1;
