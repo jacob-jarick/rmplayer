@@ -234,11 +234,10 @@ sub history_add
 {
 	my $file	= shift;
 	&quit("ERROR history_add: \$parent_hash{$file} is undef\n" . Dumper(\%parent_hash)) if ! defined $parent_hash{$file};
-	my $parent	= $parent_hash{$file};
 
-	push @{ $info{$parent}{history} }, $file;
+	push @{ $info{ $parent_hash{$file} }{history} }, $file;
 	$history_hash{$file} = 1;
-	&config::trim_history($parent);
+	&config::trim_history($parent_hash{$file});
 	&file_append($history_file, "$file\n");
 	&misc::trim_log($history_file, 10);
 }
@@ -284,14 +283,7 @@ sub play
 sub random_select
 {
 	my $dir		= &dir_stack_select;
-	my @tmp		= ();
 	my $play_file	= '';
-
-	for my $file (@{$info{$dir}{contents}})
-	{
-		next if defined $info{$dir}{$file};
-		push @tmp, $file;
-	}
 
 	if (defined $info{$dir}{history} && scalar @{$info{$dir}{history}} >= $info{$dir}{count})
 	{
@@ -299,12 +291,12 @@ sub random_select
 		&config::trim_history($dir);
 	}
 
-	my @tmp2	= @tmp;
-	@tmp		= ();
+	my @tmp		= ();
+	my @tmp2	= @{$info{$dir}{contents}};
 
 	for my $file(@tmp2)
 	{
-		next if ( defined $history_hash{$file});
+		next if defined $history_hash{$file} ;
 		push @tmp, $file;
 	}
 
@@ -372,21 +364,21 @@ sub check_cmds
 		elsif($cmd =~ /^PLAY/)
 		{
 			$config::app{main}{play_count_limit} = $play_count = 0;
-
-			print "*\n* Resuming playback\n" if $STOP;
-			print "*\n* Skipping to next file\n" if !$STOP;
 			$STOP = 0;
+			print "*\n* Resuming playback\n" if $STOP;
 		}
 		elsif($cmd =~ /^IGNORE\t(.*)$/)
 		{
 			my $file = $1;
-			print "*\n* WebUI asked me to ignore '$file'\n";
+
+			die "ignore file '$file' not found\n" if !-f $file;
+
+			print "* IGNORING: '$file'\n";
 
 			&update_ignore($file);
 		}
 		elsif($cmd =~ /^RELOAD/)
 		{
-			print "*\n* $1.\n" if($cmd =~ /^RELOAD\s+(.*)$/);
 			print "*\n* Reload requested.\n";
 
 			&reload;
@@ -394,7 +386,7 @@ sub check_cmds
 		elsif($cmd =~ /^DISABLE\t+(.*)/)
 		{
 			my $key = $1;
-			print "* DISABLE $key\n";
+			print "* DISABLE directory '$key'\n";
 
 			$config::dirs{$key}{enabled} = 0;
 			&reload;

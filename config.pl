@@ -186,7 +186,7 @@ sub display
 		{
 			if(lc $^O eq 'mswin32')
 			{
-				$config::app{main}{kill_cmd} = 'taskkill /im vlc.exe';
+				$config::app{main}{kill_cmd} = 'taskkill /im vlc.exe > NUL 2>&1';
 			}
 			else
 			{

@@ -174,6 +174,7 @@ sub load_playlist
 	# now cleanup the info hash
 	for my $key (keys %info)
 	{
+		# check %info keys against %dirs keys
 		my $found = 0;
 		for my $k2(keys %dirs)
 		{
@@ -189,6 +190,7 @@ sub load_playlist
 			next;
 		}
 
+		# ensure %info only has known subkeys
 		my @fields = ('history', 'contents', 'count');
 		for my $key2 (keys %{$info{$key}})
 		{
