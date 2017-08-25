@@ -5,15 +5,18 @@ use strict;
 
 use FindBin qw/$Bin/;
 
-use LWP::Simple qw(getstore);
-use LWP::UserAgent;
-use File::Fetch;
+if(lc $^O ne 'mswin32')
+{
+	use LWP::Simple qw(getstore);
+	use LWP::UserAgent;
+	use File::Fetch;
+}
 use Archive::Zip;
 
 print "\n\nChecking for Updates\n\n";
 
 my $dir		= "$Bin/updates";
-my $url		= 'https://raw.githubusercontent.com/jacob-jarick/rmplayer/master/builddate.txt';
+my $url		= 'http://raw.githubusercontent.com/jacob-jarick/rmplayer/master/builddate.txt';
 my $file	= &get($url);
 my $old_file	= "$Bin/builddate.txt";
 
@@ -50,15 +53,32 @@ exit;
 
 sub get
 {
+
 	my $filename	= $url;
 	$filename	=~ m/.*\/(.*)$/;
 	$filename	= $1;
 	my $save	= "$dir/$filename";
+
+	unlink $save;
+
+	# PP does not pack https nicely, so instead, use windows powershell to download the files
+
+	if(lc $^O eq 'mswin32')
+	{
+		# thanks: https://superuser.com/questions/25538/how-to-download-files-from-command-line-in-windows-like-wget-is-doing
+
+		$save =~ s/\//\\/g;
+
+		my $cmd = "powershell -command \"Invoke-WebRequest -OutFile '$save' '$url'\"";
+		print "$cmd\n";
+		system($cmd);
+		return $save;
+	}
+
 	my $ua		= LWP::UserAgent->new();			$ua->show_progress(1);
 	my $response	= $ua->get($url);				die $response->status_line if !$response->is_success;
 	my $file	= $response->decoded_content(charset=>'none');
 
-	unlink $save;
 	getstore($url,$save);
 
 	return $save;
