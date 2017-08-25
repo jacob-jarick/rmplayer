@@ -23,17 +23,49 @@ use misc;
 use jhash;
 use config;
 
-our $mw;
+my $mw;
+my $frame_main;
 my $chart;
 my $chart_frame;
+my $h = 0;
+my $w = 0;
+my $REDRAW = 0;
 
 my $chart_type = 'pie';
 
 &config::load;
 &config::load_playlist;
 &config::load_dir_stack;
+
+$mw = new MainWindow; # Main Window
+$mw->title("rmplayer.pl config");
+
+$mw->bind('<KeyPress>' => sub
+{
+	if($Tk::event->K eq 'F5')
+	{
+		$frame_main->destroy;
+		&display;
+		&plot;
+	}
+}
+);
+
+$mw->raise;
+
+$mw->protocol
+(
+	'WM_DELETE_WINDOW',
+	sub
+	{
+		$mw->destroy;
+		exit;
+	}
+);
+
 &display;
 &plot;
+
 MainLoop;
 
 exit;
@@ -54,28 +86,22 @@ sub display
 {
 	my $row = 1;
 
-	$mw = new MainWindow; # Main Window
-	$mw->title("rmplayer.pl config");
-
-	$mw->raise;
-
-	$mw->protocol
+	$frame_main = $mw->Frame()->pack
 	(
-		'WM_DELETE_WINDOW',
-		sub
-		{
-			$mw->destroy;
-			exit;
-		}
+		-side=>		'top',
+		-expand=>	1,
+		-fill=>		'both',
+		-anchor=>	'n'
 	);
 
-	my $frame_top = $mw->Frame
+
+	my $frame_top = $frame_main->Frame
 	(
 		-height => 10,
 	)->pack
 	(
 		-side=>		'top',
-		-expand=>	1,
+		-expand=>	0,
 		-fill=>		'both',
 		-anchor=>	'n'
 	);
@@ -83,7 +109,7 @@ sub display
         ->pack
 	(
 		-side=>		'top',
-		-expand=>	1,
+		-expand=>	0,
 		-fill=>		'both',
 		-anchor=>	'n'
 	);
@@ -320,7 +346,6 @@ sub display
 		-label=>'Directories'
 	);
 
-
 	for my $name(&list)
 	{
 		$col = 0;
@@ -333,7 +358,7 @@ sub display
 				delete $config::dirs{$name};
 				&config::save;
 				&config::load;
-				$mw->destroy;
+				$frame_main->destroy;
 				&display;
 				&plot;
 			}
@@ -449,8 +474,18 @@ sub display
 		);
 		$row++;
 	}
+	my $frame_buttons = $frame_main->Frame
+	(
+ 		-height => 2,
+	)->pack
+	(
+		-side=>		'bottom',
+		-expand=>	0,
+		-fill=>		'x',
+		-anchor=>	's'
+	);
 
-	$chart_frame = $mw->Frame()
+	$chart_frame = $frame_main->Frame()
 	->pack
 	(
 		-side=>		'bottom',
@@ -461,16 +496,7 @@ sub display
 
 	&draw_chart;
 
-	my $frame_buttons = $mw->Frame
-	(
- 		-height => 2,
-	)->pack
-	(
-		-side=>		'bottom',
-		-expand=>	1,
-		-fill=>		'x',
-		-anchor=>	's'
-	);
+
 
 	$row = 0;
 	$col = 0;
@@ -522,7 +548,7 @@ sub display
 				$config::dirs{$name}{path}	= $dd_dir;
 				$config::dirs{$name}{enabled}	= 1;
 				&config::save;
-				$mw->destroy;
+				$frame_main->destroy;
 				&config::load;
 				&display;
 				&plot;
@@ -594,6 +620,8 @@ sub plot
 	my @data = ([@names], [@values]);
 
 	$chart->plot( \@data );
+
+	$mw->resizable( 1, 1 );
 }
 
 sub plot_bar
@@ -614,8 +642,10 @@ sub draw_chart
 			-legendfont=>	'{Arial} 12 {bold}',
 		)->pack
 		(
+			-side=>		'bottom',
 			-expand=>	1,
 			-fill=>		'both',
+			-anchor=>	's'
 		);
 	}
 	elsif($chart_type eq 'bar')
@@ -627,12 +657,14 @@ sub draw_chart
 			-font=>		'{Arial} 12 {bold}',
 			-fill=>		'both',
 			-legend=>	0,
-			-padding=>	([15,20,20,100])
+			-padding=>	([15,20,20,120])
 
 		)->pack
 		(
+			-side=>		'bottom',
 			-expand=>	1,
 			-fill=>		'both',
+			-anchor=>	's'
 		);
 	}
 }
