@@ -20,13 +20,12 @@ del update.exe
 
 echo Build rmplayer.exe
 cmd /c pp -z 9 -u -M File::Spec::Functions -M HTTP::Server::Simple::CGI -M CGI::Carp -M List::Util -M Term::ReadKey -M Config::IniHash -M Scalar::Util -M JSON -M File::stat -M threads -M threads::shared -M CGI -M List::MoreUtils -o rmplayer.exe rmplayer.pl
-echo UPX rmplayer.exe
 
+echo Build config.exe
 cmd /c pp -z 9 -u -M Tk -M Tk::ROText -M Tk::Spinbox -M File::Spec::Functions -M Config::IniHash -M JSON -M List::MoreUtils -M Tk::NoteBook -M Tk::Chart::Pie -M Tk::Graph -o config.exe config.pl
-echo UPX config.exe
 
 echo Build update.exe
-cmd /c pp -z 9 -u -M LWP::Simple -M LWP::UserAgent -M File::Fetch -M Archive::Zip -o update.exe update.pl
+cmd /c pp -z 9 -u -M LWP::Simple -M LWP::UserAgent -M File::Fetch -M Archive::Zip -M LWP::Protocol::https -o update.exe update.pl
 echo UPX update.exe
 
 echo Done
