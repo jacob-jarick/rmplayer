@@ -17,22 +17,25 @@ use Config::IniHash;
 our %app			= ();
 our %dirs			= ();
 
+our $media_extensions_default	= 'mp4,mpg,mpeg,avi,asf,wmf,wmv,mkv,mov';
+
 # set application defaults
 $app{main}{play_count_limit}	= 0;
 $app{main}{sync_every}		= 1;
 $app{main}{debug}		= 0;
+$app{main}{webserver}		= 1;
 $app{main}{kill_cmd}		= '';
 $app{main}{player_cmd}		= '';
-$app{main}{webserver}		= 1;
+$app{main}{media_extensions}	= $media_extensions_default;
 
 our %dir_defaults		= ();
 
-$dir_defaults{path}		= '';
 $dir_defaults{recursive}	= 0;
 $dir_defaults{enabled}		= 1;
 $dir_defaults{weight}		= 100;
 $dir_defaults{filter}		= '';
 $dir_defaults{ignore_filter}	= '';
+$dir_defaults{path}		= '';
 
 sub save
 {
@@ -65,6 +68,18 @@ sub load
 	$app{main}{sync_every}		= 3	if $app{main}{sync_every} !~ /^\d+$/;
 	$app{main}{play_count_limit}	= 0	if $app{main}{play_count_limit} !~ /^\d+$/;
 	$app{main}{debug}		= 0	if $app{main}{debug} !~ /^(0|1)$/;
+
+	my @tmp		= split(',', $app{main}{media_extensions});
+	my @tmp2	= ();
+	$media_ext	= '';
+
+	for my $ext(@tmp)
+	{
+		$ext =~ s/\s+//g;
+		push @tmp2, $ext;
+	}
+	$app{main}{media_extensions}	= join(',', sort {lc $a cmp lc $b} @tmp2);
+	$media_ext			= join('|', sort {lc $a cmp lc $b} @tmp2);
 
 
 	if (! -f $dirs_file)
@@ -205,7 +220,6 @@ sub load_dir_stack
 	%dir_stack	= ();
 	%weight_hash	= ();
 
-# 	print "LOAD DIR STACK\n" if $app{main}{debug};
 	for my $k(keys %dirs)
 	{
 		if (!$dirs{$k}{enabled})
@@ -224,13 +238,8 @@ sub load_dir_stack
 
 		$index += $w;
 		$dir_stack{$k} = $index;
-# 		print "'$k' = $dir_stack{$k}\n" if $app{main}{debug};
 	}
 	$rand_range = $index;
-	if ($app{main}{debug})
-	{
-# 		print "DEBUG: load_dir_stack: highest result for random select is $index\n";
-	}
 }
 
 # ---------------------------------------------------

@@ -50,7 +50,7 @@ our $version		= '5.WIP';
 our $windows		= 0;
 our $home 		= &get_home;
 
-our $media_ext		= "mp3|mp4|mpc|mpg|mpeg|avi|asf|wmf|wmv|ogg|ogm|rm|rmvb|mkv|mov";
+our $media_ext		= '';
 
 our $web_dir		= $Bin.'/web';
 our $scripts_dir	= $Bin.'/scripts';

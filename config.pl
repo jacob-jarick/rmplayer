@@ -27,9 +27,7 @@ my $mw;
 my $frame_main;
 my $chart;
 my $chart_frame;
-my $h = 0;
-my $w = 0;
-my $REDRAW = 0;
+my $entry_width = 40;
 
 my $chart_type = 'pie';
 
@@ -51,8 +49,6 @@ $mw->bind('<KeyPress>' => sub
 }
 );
 
-$mw->raise;
-
 $mw->protocol
 (
 	'WM_DELETE_WINDOW',
@@ -65,7 +61,7 @@ $mw->protocol
 
 &display;
 &plot;
-
+$mw->raise;
 MainLoop;
 
 exit;
@@ -125,6 +121,60 @@ sub display
 	my $col = 0;
 	$row = 0;
 
+	# ----------------------------------------------------------------------------------------------------------
+
+	$tab1->Label(-text=>'Media Extensions to Play')
+	-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+	$tab1->Entry
+	(
+		-textvariable=>	\$config::app{main}{media_extensions},
+		-width=>	$entry_width,
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+
+	$col++;
+
+	$tab1->Button
+	(
+		-text=>'Set to Default',
+		-command => sub
+		{
+			$config::app{main}{media_extensions} = $config::media_extensions_default;
+		}
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+
+	$tab1->Button
+	(
+		-text=>'Clear',
+		-command => sub
+		{
+			$config::app{main}{media_extensions} = '';
+		}
+	)-> grid
+	(
+		-row=>		$row++,
+		-column=>	$col++,
+		-sticky=>	'nw',
+	);
+
+	$col = 0;
+
+	# ----------------------------------------------------------------------------------------------------------
+
 	$tab1->Label(-text=>'Player Command')
 	-> grid
 	(
@@ -135,6 +185,7 @@ sub display
 	$tab1->Entry
 	(
 		-textvariable=>	\$config::app{main}{player_cmd},
+		-width=>	$entry_width,
 	)-> grid
 	(
 		-row=>		$row,
@@ -193,6 +244,8 @@ sub display
 
 	$col = 0;
 
+	# ----------------------------------------------------------------------------------------------------------
+
 	$tab1->Label(-text=>'Kill Player Command')
 	-> grid
 	(
@@ -203,6 +256,7 @@ sub display
 	$tab1->Entry
 	(
 		-textvariable=>	\$config::app{main}{kill_cmd},
+		-width=>	$entry_width,
 	)-> grid
 	(
 		-row=>		$row,
@@ -246,6 +300,8 @@ sub display
 
 	$col = 0;
 
+	# ----------------------------------------------------------------------------------------------------------
+
 	$tab1->Label(-text=>'Sync Data Every N Plays')-> grid
 	(
 		-row=>		$row,
@@ -279,6 +335,9 @@ sub display
 	);
 
 	$col = 0;
+
+	# ----------------------------------------------------------------------------------------------------------
+
 	$tab1->Label(-text=>'Play Count Limit')-> grid
 	(
 		-row=>		$row,
@@ -313,6 +372,9 @@ sub display
 	);
 
 	$col = 0;
+
+	# ----------------------------------------------------------------------------------------------------------
+
 	$tab1->Checkbutton
 	(
 		-text=>		'Debug',
@@ -474,6 +536,10 @@ sub display
 		);
 		$row++;
 	}
+
+	# ----------------------------------------------------------------------------------------------------------
+	# Buttons Frame
+
 	my $frame_buttons = $frame_main->Frame
 	(
  		-height => 2,
@@ -493,8 +559,6 @@ sub display
 		-fill=>		'both',
 		-anchor=>	's'
 	);
-
-	&draw_chart;
 
 
 
@@ -568,6 +632,8 @@ sub display
 		-text=>		'Close',
 		-command=>	sub { destroy $mw; }
 	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+
+	&draw_chart;
 }
 
 sub select_player
@@ -601,10 +667,10 @@ sub plot
 		&plot_bar;
 		return;
 	}
-	my @names = ();
-	my @values = ();
+	my @names	= ();
+	my @values	= ();
+	my $total	= 0;
 
-	my $total = 0;
 	for my $key(keys %weight_hash)
 	{
 		$total += $weight_hash{$key};
@@ -620,8 +686,6 @@ sub plot
 	my @data = ([@names], [@values]);
 
 	$chart->plot( \@data );
-
-	$mw->resizable( 1, 1 );
 }
 
 sub plot_bar
