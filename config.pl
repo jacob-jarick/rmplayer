@@ -29,6 +29,7 @@ my $frame_main;
 my $chart;
 my $chart_frame;
 my $entry_width = 40;
+my $pad_size	= 2;
 
 my $chart_type = 'pie';
 
@@ -130,6 +131,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 	$tab1->Entry
 	(
@@ -140,6 +143,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$col++;
@@ -156,6 +161,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$tab1->Button
@@ -170,6 +177,8 @@ sub display
 		-row=>		$row++,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$col = 0;
@@ -182,6 +191,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 	$tab1->Entry
 	(
@@ -192,6 +203,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$tab1->Button
@@ -206,6 +219,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 	$tab1->Button
 	(
@@ -226,6 +241,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$tab1->Button
@@ -240,6 +257,8 @@ sub display
 		-row=>		$row++,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 
@@ -253,6 +272,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 	$tab1->Entry
 	(
@@ -263,6 +284,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 	$col++;
 	$tab1->Button
@@ -284,6 +307,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 	$tab1->Button
 	(
@@ -297,6 +322,8 @@ sub display
 		-row=>		$row++,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$col = 0;
@@ -308,6 +335,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$tab1->Spinbox
@@ -322,6 +351,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 	$col++;
 	$tab1->Button
@@ -333,6 +364,8 @@ sub display
 		-row=>		$row++,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$col = 0;
@@ -344,7 +377,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
-		-padx=>		2
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$tab1->Spinbox
@@ -359,6 +393,8 @@ sub display
 		-row=>		$row,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 	$col++;
 	$tab1->Button
@@ -370,6 +406,8 @@ sub display
 		-row=>		$row++,
 		-column=>	$col++,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
 	);
 
 	$col = 0;
@@ -385,6 +423,7 @@ sub display
 		-row=>		$row++,
 		-column=>	$col,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
 	);
 	$tab1->Checkbutton
 	(
@@ -395,6 +434,7 @@ sub display
 		-row=>		$row++,
 		-column=>	$col,
 		-sticky=>	'nw',
+		-padx=>		$pad_size,
 	);
 	$col = 0;
 
@@ -422,6 +462,9 @@ sub display
 				&config::save;
 				&config::load;
 				$frame_main->destroy;
+				&config::load_playlist;
+				&config::load_dir_stack;
+
 				&display;
 				&plot;
 			}
@@ -430,7 +473,8 @@ sub display
 			-row=>		$row,
 			-column=>	$col++,
 			-sticky=>	'nw',
-			-padx =>	2
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
 		);
 
 		my $text = $tab2 -> ROText
@@ -443,7 +487,8 @@ sub display
 			-row=>		$row,
 			-column=>	$col++,
 			-sticky=>	'nw',
-			-padx=>		2
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
 		);
 		$text->Contents($name);
 		my $dir_text;
@@ -470,7 +515,8 @@ sub display
 			-row=>		$row,
 			-column=>	$col++,
 			-sticky=>	'nw',
-			-padx=>		2
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
 		);
 		$dir_text = $tab2->ROText
 		(
@@ -482,7 +528,8 @@ sub display
 			-row=>		$row,
 			-column=>	$col++,
 			-sticky=>	'nw',
-			-padx=>		2
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
 		);
  		$dir_text->Contents($config::dirs{$name}{path});
 
@@ -495,7 +542,8 @@ sub display
 			-row=>		$row,
 			-column=>	$col++,
 			-sticky=>	'nw',
-			-padx=>		2
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
 		);
 		$tab2->Checkbutton
 		(
@@ -506,14 +554,16 @@ sub display
 			-row=>		$row,
 			-column=>	$col++,
 			-sticky=>	'nw',
-			-padx=>		2
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
 		);
 		$tab2->Label(-text=>'Weight')-> grid
 		(
 			-row=>		$row,
 			-column=>	$col++,
 			-sticky=>	'nw',
-			-padx=>		2
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
 		);
 
 		my $spinbox = $tab2->Spinbox
@@ -533,7 +583,8 @@ sub display
 			-row=>		$row,
 			-column=>	$col++,
 			-sticky=>	'nw',
-			-padx=>		2
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
 		);
 		$row++;
 	}
@@ -558,10 +609,8 @@ sub display
 		-side=>		'bottom',
 		-expand=>	1,
 		-fill=>		'both',
-		-anchor=>	's'
+		-anchor=>	's',
 	);
-
-
 
 	$row = 0;
 	$col = 0;
@@ -577,7 +626,7 @@ sub display
 			&draw_chart;
 			&plot;
 		}
-	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size,  -pady=> $pad_size,);
 
 	$frame_buttons->Radiobutton
 	(
@@ -591,7 +640,7 @@ sub display
 			&plot;
 		}
 
-	)-> grid(-row=>$row, -column=>$col++, -columnspan=>2, -sticky=> 'nw', -padx=> 2 );
+	)-> grid(-row=>$row, -column=>$col++, -columnspan=>2, -sticky=> 'nw', -padx=>$pad_size, -pady=> $pad_size,);
 
 	$row++;
 	$col=0;
@@ -615,24 +664,27 @@ sub display
 				&config::save;
 				$frame_main->destroy;
 				&config::load;
+				&config::load_playlist;
+				&config::load_dir_stack;
+
 				&display;
 				&plot;
 			}
 
 		}
-	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size, -pady=> $pad_size,);
 
 	$frame_buttons->Button
 	(
 		-text=>		'Save',
 		-command=>	sub { &config::save; }
-	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size, -pady=> $pad_size,);
 
 	$frame_buttons -> Button
 	(
 		-text=>		'Close',
 		-command=>	sub { destroy $mw; }
-	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=> 2 );
+	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size,  -pady=> $pad_size,);
 
 	&draw_chart;
 }
