@@ -309,7 +309,6 @@ sub display
 	);
 	$col = 0;
 
-
 	# ----------------------------------------------------------------------------------------------------------
 	# Directories Tab
 
@@ -469,7 +468,7 @@ sub display
 	(
 		-side=>		'bottom',
 		-expand=>	1,
-		-fill=>		'both',
+		-fill=>		'x',
 		-anchor=>	's'
 	);
 
@@ -623,9 +622,13 @@ sub draw_chart
 	{
 		$chart = $chart_frame->Graph
 		(
-			-type=>		'BARS',
+			-type=>		'HBars',
 			-sortnames=>	'alpha',
 			-font=>		'{Arial} 12 {bold}',
+			-fill=>		'both',
+			-legend=>	0,
+			-padding=>	([15,20,20,100])
+
 		)->pack
 		(
 			-expand=>	1,
