@@ -5,7 +5,8 @@ require Exporter;
 use strict;
 use warnings;
 
-use Carp;
+use Data::Dumper::Concise;
+use Carp qw(cluck longmess shortmess);
 
 use Tk;
 use Config::IniHash;
@@ -662,6 +663,7 @@ sub select_player
 
 sub plot
 {
+	return if !scalar keys %weight_hash;
 	if($chart_type eq 'bar')
 	{
 		&plot_bar;
@@ -732,5 +734,13 @@ sub draw_chart
 		);
 	}
 }
+
+sub quit
+{
+	my $string = shift;
+	cluck $string;
+	exit;
+}
+
 
 1;

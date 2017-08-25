@@ -5,6 +5,9 @@ require Exporter;
 use strict;
 use warnings;
 
+use Data::Dumper::Concise;
+use List::MoreUtils qw(uniq);
+
 use FindBin qw/$Bin/;
 use lib			$Bin;
 use lib			"$Bin/lib";
@@ -17,7 +20,7 @@ use Config::IniHash;
 our %app			= ();
 our %dirs			= ();
 
-our $media_extensions_default	= 'mp4,mpg,mpeg,avi,asf,wmf,wmv,mkv,mov';
+our $media_extensions_default	= 'mp4,m4v,mpg,mpeg,avi,asf,wmf,wmv,mkv,mov';
 
 # set application defaults
 $app{main}{play_count_limit}	= 0;
@@ -78,8 +81,8 @@ sub load
 		$ext =~ s/\s+//g;
 		push @tmp2, $ext;
 	}
-	$app{main}{media_extensions}	= join(',', sort {lc $a cmp lc $b} @tmp2);
-	$media_ext			= join('|', sort {lc $a cmp lc $b} @tmp2);
+	$app{main}{media_extensions}	= join(',', sort {lc $a cmp lc $b} uniq @tmp2);
+	$media_ext			= join('|', sort {lc $a cmp lc $b} uniq @tmp2);
 
 
 	if (! -f $dirs_file)
@@ -121,8 +124,14 @@ sub load_playlist
 	%parent_hash = ();
 	for my $k (keys %dirs)
 	{
-		&quit("load_playlist: \$dirs{$k}{path} is undef")			if ! defined $dirs{$k}{path};
-		&quit("ERROR: dirs.ini invalid path for '$k' - '$dirs{$k}{path}'\n")	if !-d $dirs{$k}{path};
+		&main::quit("load_playlist: \$dirs{$k}{path} is undef")				if ! defined $dirs{$k}{path};
+
+		if (!-d $dirs{$k}{path})
+		{
+			print "WARNING: dirs.ini invalid path for '$k' - '$dirs{$k}{path}'\n";
+			delete $dirs{$k};
+			next;
+		}
 		print '.';
 
 		my @tmp = ();
@@ -228,8 +237,17 @@ sub load_dir_stack
 			next;
 		}
 
-		&quit("ERROR load_dir_stack: \$dirs{$k}{weight} is undef") if ! defined $dirs{$k}{weight};
-		&quit("ERROR load_dir_stack: \$info{$k}{count} is undef" . Dumper(\%info) ) if ! defined $info{$k}{count};
+		if (! defined $dirs{$k}{weight})
+		{
+			print "WARNING: load_dir_stack: \$dirs{$k}{weight} is undef\n";
+			$dirs{$k}{weight} = 100;
+		}
+
+		if (! defined $info{$k}{count})
+		{
+			print "WARNING: load_dir_stack: \$info{$k}{count} is undef" . Dumper(\%info) . "\n";
+			next;
+		}
 
 		next if !$info{$k}{count};
 

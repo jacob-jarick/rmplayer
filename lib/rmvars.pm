@@ -44,10 +44,12 @@ $percent
 %weight_hash
 
 $rand_range
+
+$help_txt
+$ascii
 );
 
 our $version		= '5.WIP';
-our $windows		= 0;
 our $home 		= &get_home;
 
 our $media_ext		= '';
@@ -84,6 +86,28 @@ our %weight_hash	= ();
 our $percent		= 0.90;
 our $rand_range		= 1;
 
+our $ascii = q{
+			          o
+			 o       /
+			  \     /
+			   \   /
+			    \ /
+		+------------v-------------+
+		|  __________________      |
+		| /          ,  ooo  \     |
+		| |  ---=====|#O#### | (\) |
+		| | d        `  \ )  |     |
+		| |   ,;`,      | |  | (-) |
+		| |  // o ',    | |  |     |
+		| \  ' o \ /,   | |  /     |
+		|  ------------------      |
+		+--------------------------+
+		   []                 []
+
+};
+
+our $help_txt = "Run and access web ui from http://localhost:8080\n";
+
 
 sub get_home
 {
@@ -91,20 +115,15 @@ sub get_home
 	$home = $ENV{HOME}		if defined $ENV{HOME} && lc $^O ne lc 'MSWin32';
 	$home = $ENV{USERPROFILE}	if lc $^O eq lc 'MSWin32';
 
-
 	$home = $ENV{TMP}		if ! defined $home; # surely the os has a tmp if nothing else
 	$home =~ s/\\/\//g;
 
 	$home .= "/.rmplayer";
 
-	if(!-d $home)
-	{
-		mkdir($home, 0755) or &main::quit("Cannot mkdir :$home $!\n");
-	}
-	if(!-d "$home/data")
-	{
-		mkdir("$home/data", 0755) or &main::quit("Cannot mkdir :$home/data $!\n");
-	}
+
+	mkdir($home, 0755) or &main::quit("Cannot mkdir :$home $!\n") if !-d $home;
+	mkdir("$home/data", 0755) or &main::quit("Cannot mkdir :$home/data $!\n") if !-d "$home/data";
+
 	return $home;
 }
 
