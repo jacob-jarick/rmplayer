@@ -4,3 +4,5 @@ cmd /c pp -u -M File::Spec::Functions -M HTTP::Server::Simple::CGI -M CGI::Carp 
 
 
 cmd /c pp -u -M Tk -M Tk::ROText -M Tk::Spinbox -M File::Spec::Functions -M Config::IniHash -M JSON -M List::MoreUtils -M Tk::NoteBook -M Tk::Chart::Pie -M Tk::Graph -o config.exe config.pl
+
+cmd /c pp -u -M LWP::Simple -M LWP::UserAgent -M File::Fetch -M Archive::Zip -o update.exe update.pl

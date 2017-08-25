@@ -10,59 +10,43 @@ use LWP::UserAgent;
 use Digest::MD5    qw( md5_hex );
 use Digest::MD5::File qw( file_md5_hex );
 use File::Fetch;
+use Archive::Zip;
 
-my $dir = "$Bin/updates";
+my $dir		= "$Bin/updates";
+my $url		= 'https://raw.githubusercontent.com/jacob-jarick/rmplayer/master/lib/rmvars.pm';
+my $file	= &get($url);
+my $old_file	= "$Bin/lib/rmvars.pm";
 
-my $url = 'https://raw.githubusercontent.com/jacob-jarick/rmplayer/master/lib/rmvars.pm';
+print "\n\nChecking for Updates\n\n";
 
-my $file = &get($url);
-
-my $old_file = "$Bin/libs/rmvars.pm";
-
-print "Comparing:\n\t$old_file\n\tTO\n\t$file\n";
-
-open(FILE, $file) or die "$!";
-my @tmp = <FILE>;
-close(FILE);
-s/\r/\n/ for(@tmp);
-
-open(FILE, $file) or die "$!";
-my @tmp2 = <FILE>;
-close(FILE);
-s/\r/\n/ for(@tmp);
-
-my $different = 0;
-
-if(scalar @tmp == scalar @tmp2)
+if(!-d $dir)
 {
-	for my $i(0 .. $#tmp)
-	{
-		$tmp[$i] =~ s/\n|\r//g;
-		$tmp2[$i] =~ s/\n|\r//g;
-
-		if($tmp[$i] ne $tmp2[$i])
-		{
-			print "line $i does not match, update needed:\n\t$tmp[$i]\n\t$tmp2[$i]\n\n";
-
-			$different++;
-			last;
-		}
-	}
-}
-else
-{
-	$different++;
+	print "creating $dir\n";
+	mkdir $dir;
 }
 
-if ($different == 0)
-{
-	print "No update needed\n";
-	exit;
-}
+&check_for_update;
+
+print "\n\nUpdating\n\n";
 
 $url = 'https://github.com/jacob-jarick/rmplayer/archive/master.zip';
 
-&get($url);
+my $zip_file = &get($url);
+
+print "\n\nUpacking Update\n\n";
+
+my $zip = Archive::Zip->new($zip_file);
+
+foreach my $member ($zip->members)
+{
+	next if $member->isDirectory;
+	my $filename = $member->fileName;
+	$filename =~ s/.*?\///;
+	print "extracting $filename\n";
+	$member->extractToFileNamed("$Bin/$filename");
+}
+
+print "\n\nUpdate Complete\n\n";
 
 exit;
 
@@ -72,7 +56,8 @@ sub get
 	$filename =~ m/.*\/(.*)$/;
 	$filename = $1;
 
-	print "$filename\n";
+	my $save = "$dir/$filename";
+
 
 	my $ua = LWP::UserAgent->new();
 	$ua->show_progress(1);
@@ -80,13 +65,47 @@ sub get
 	my $response = $ua->get($url);
 	die $response->status_line if !$response->is_success;
 	my $file = $response->decoded_content( charset => 'none' );
-	my $md5_hex = md5_hex($file);
-	print "$md5_hex\n";
-	my $save = "$dir/$filename";
+
+	unlink $save;
 	getstore($url,$save);
 
 	return $save;
 
 }
 
+sub check_for_update
+{
+	print "Comparing:\n\t$old_file\n\tTO\n\t$file\n";
 
+	return 1 if !-f $old_file;
+
+	open(FILE, $file) or die "$!";
+	my @tmp = <FILE>;
+	close(FILE);
+
+	open(FILE, $old_file) or die "cant read '$old_file' $!";
+	my @tmp2 = <FILE>;
+	close(FILE);
+
+	my $different = 0;
+
+	for my $i(0 .. $#tmp2)
+	{
+	# 	print "checking line $i\n";
+		$tmp[$i]	=~ s/\n|\r//g;
+		$tmp2[$i]	=~ s/\n|\r//g;
+
+		if($tmp[$i] ne $tmp2[$i])
+		{
+			$different++;
+			last;
+		}
+	}
+
+	if (!$different)
+	{
+		print "No update needed\n";
+		exit;
+	}
+
+}

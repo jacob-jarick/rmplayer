@@ -46,7 +46,7 @@ $percent
 $rand_range
 );
 
-our $version		= '5.WIP';
+our $version		= '5.0 RC 1';
 our $windows		= 0;
 our $home 		= &get_home;
 
