@@ -35,6 +35,7 @@ our %dir_defaults		= ();
 
 $dir_defaults{recursive}	= 0;
 $dir_defaults{enabled}		= 1;
+$dir_defaults{random}		= 1;
 $dir_defaults{weight}		= 100;
 $dir_defaults{filter}		= '';
 $dir_defaults{ignore_filter}	= '';
@@ -105,6 +106,7 @@ sub load
 		$dirs{$k}{weight}	= 1	if $dirs{$k}{weight} < 1;
 
 		$dirs{$k}{recursive}	= 0	if $dirs{$k}{recursive} !~ /^(0|1)$/;
+		$dirs{$k}{random}	= 1	if $dirs{$k}{random} !~ /^(0|1)$/;
 
 		$dirs{$k}{path}		=~ s/\\/\//g;
 	}
@@ -269,7 +271,21 @@ sub trim_history
 	return if !$info{$dir}{count};
 
 	my $history_length = 0;
-	   $history_length = scalar(@{$info{$dir}{history}}) if defined $info{$dir}{history};
+	   $history_length = scalar @{$info{$dir}{history}} if defined $info{$dir}{history};
+
+	if(!$dirs{$dir}{random})
+	{
+		if ($history_length >= $info{$dir}{count})
+		{
+			for my $file(@{$info{$dir}{history}})
+			{
+				delete $history_hash{$file};
+			}
+			@{$info{$dir}{history}} = ();
+		}
+		&save;
+		return;
+	}
 
 	my $percent_played = $history_length / $info{$dir}{count};
 

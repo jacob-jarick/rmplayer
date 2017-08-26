@@ -542,6 +542,18 @@ sub display
 		);
 		$tab2->Checkbutton
 		(
+			-text=>		'Random',
+			-variable=>	\$config::dirs{$name}{random},
+		)-> grid
+		(
+			-row=>		$row,
+			-column=>	$col++,
+			-sticky=>	'nw',
+			-padx=>		$pad_size,
+			-pady=>		$pad_size,
+		);
+		$tab2->Checkbutton
+		(
 			-text=>		'Enable',
 			-variable=>	\$config::dirs{$name}{enabled},
 		)-> grid

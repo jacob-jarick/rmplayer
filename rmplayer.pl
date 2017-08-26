@@ -208,9 +208,36 @@ sub history_add
 	my $file	= shift;
 	&quit("ERROR history_add: \$parent_hash{$file} is undef\n" . Dumper(\%parent_hash)) if ! defined $parent_hash{$file};
 
-	push @{ $info{ $parent_hash{$file} }{history} }, $file;
-	$history_hash{$file} = 1;
-	&config::trim_history($parent_hash{$file});
+	my $parent	= $parent_hash{$file};
+
+	if(!$config::dirs{$parent}{random})
+	{
+		my @contents = sort {lc $a cmp lc $b} @{ $info{ $parent }{contents} };
+		@{ $info{$parent}{history} } = ();
+
+		my $found = 0;
+
+		for my $i(0 .. $#contents)
+		{
+			if($found)
+			{
+				delete $history_hash{$contents[$i]};
+				next;
+			}
+
+			push @{ $info{$parent}{history} }, $contents[$i];
+
+			$history_hash{$contents[$i]}	= 1;
+			$found				= 1 if $file eq $contents[$i];
+		}
+	}
+	else
+	{
+		push @{ $info{$parent}{history} }, $file;
+		$history_hash{$file} = 1;
+		&config::trim_history($parent);
+	}
+
 	&file_append($history_file, "$file\n");
 	&misc::trim_log($history_file, 10);
 }
@@ -269,13 +296,19 @@ sub random_select
 
 	for my $file(@tmp2)
 	{
-		next if defined $history_hash{$file} ;
+		next if defined $history_hash{$file};
 		push @tmp, $file;
 	}
 
 	my $list_count	= scalar @tmp;
-	my $rand	= int(rand($list_count));
-	$play_file	= $tmp[$rand] if defined $tmp[$rand];
+	$play_file = $tmp[0] if defined $tmp[0];	# for non random
+	if($info{$dir}{random})
+	{
+		my $rand	= int(rand($list_count));
+		$play_file	= $tmp[$rand] if defined $tmp[$rand];
+	}
+
+
 
 	if($play_file eq '')
 	{

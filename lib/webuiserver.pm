@@ -393,20 +393,14 @@ sub r_select2
 	my $msg		= '';
 	my $c		= 1;
 	my %dh		= ();		# load dir hash from file
-	my @tmp		= ();
-	my $ref		= &jhash::load($config::info_file);
-	my %info	= %$ref;
-	my @ignore	= &readf_clean($ignore_file);
 
-	for my $f ( @{$info{$dir}{contents}} )
-	{
-		next if &is_in_array($f, \@{$info{$dir}{history}});
-		next if &is_in_array($f, \@ignore);
-		push @tmp, $f;
-	}
 
-	@tmp = shuffle(@tmp);
-	@tmp = @tmp[0 .. 24] if(scalar @tmp > 25);
+	&config::load;
+	&config::load_info;
+
+	my @tmp	= sort {lc $a cmp lc $b} @{$info{$dir}{contents}};
+	@tmp	= shuffle(@tmp) if $dirs{$dir}{random};
+	@tmp	= @tmp[0 .. 24] if(scalar @tmp > 25);
 
 	for my $file (@tmp)
 	{
@@ -479,16 +473,16 @@ sub r_browse2
 	my $msg	= '';
 	my $c	= 1;
 
-	my $ref = &jhash::load($config::info_file);
-	%info = %$ref if defined $ref;
+	my $ref	= &jhash::load($config::info_file);
+	%info	= %$ref if defined $ref;
 
 	my %hash = ();
 	for my $file ( (@{$info{$dir}{'contents'}}) )
 	{
-		my $fn = $file;
-		$fn =~ m/^.*(\\|\/)(.*?)$/;
-		$fn = &format_fn($2);
-		$hash{$fn} = $file;
+		my $fn		= $file;
+		$fn		=~ m/^.*(\\|\/)(.*?)$/;
+		$fn		= &format_fn($2);
+		$hash{$fn}	= $file;
 	}
 
 	for my $name (sort {lc $a cmp lc $b} keys %hash)
