@@ -24,7 +24,6 @@ my %dispatch =
 (
 	'/exit'		=> \&r_exit,
 	'/stop'		=> \&r_stop,
-	'/script_out'	=> \&r_script_out,
 	'/stopped'	=> \&r_stopped,
 	'/play'		=> \&r_play,
 	'/next'		=> \&r_next,
@@ -74,23 +73,18 @@ sub handle_request
 				html_insert("$web_dir/$path_tmp", ''),
 				$cgi->end_html;
 		}
-		elsif(($path =~ /\/scripts\/.*(sh|bat)/ && -f "$scripts_dir/$path_tmp"))
+		elsif(($path =~ /\/scripts\/.*(sh|bat|exe)/i && -f "$Bin$path"))
 		{
-			my $result = '';
-
-			# NEW METHOD - need to output results to a log file.
-			my $proc = Proc::Background->new("$scripts_dir/$path_tmp > $script_out_file");
-
+			my $cmd = "$Bin$path";
 			print "HTTP/1.0 200 OK\r\n";
-			print	$cgi->header,
-				&html_insert($index_html, "$path_tmp running", "/script_out", 1),
-				$cgi->end_html;
+			print $cgi->header;
+			&r_script_out($cmd);
 		}
 		else
 		{
 			print "HTTP/1.0 404 Not found\r\n";
 			print	$cgi->header,
-				html_insert($index_html, "Path '$path' Not Found. file: $web_dir$path does not exist\n"),
+				html_insert($index_html, "handle_request Path '$path' Not Found. file: $web_dir$path does not exist\n"),
 				$cgi->end_html;
 		}
 	}
@@ -157,12 +151,9 @@ sub r_play
 
 sub r_script_out
 {
-	my $cgi  = shift;
-	return if !ref $cgi;
-
-	my $tmp = readjf($script_out_file);
-
- 	print	$cgi->header;
+	my $cmd = shift;
+	my $tmp = `$cmd`;
+	print "<!-- \$cmd = '$cmd' -->\n";
 	print &html_insert($index_html, "<PRE>$tmp</PRE>", '/scripts', 2.5);
 }
 
@@ -366,10 +357,10 @@ sub r_scripts
 	my $c = 0;
 	for my $s (@dir_list)
 	{
-		next if ($s !~ /\.(bat|sh)$/);
+		next if ($s !~ /\.(bat|sh|exe)$/i);
 
-		next if($^O eq "MSWin32" && $s !~ /\.(bat)$/);
-		next if($^O ne "MSWin32" && $s !~ /\.(sh)$/);
+		next if(lc $^O eq "mswin32" && $s !~ /\.(bat|exe)$/i);
+		next if(lc $^O ne "mswin32" && $s !~ /\.(sh)$/);
 		$c++;
 
 		$msg .="
