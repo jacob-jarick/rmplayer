@@ -302,7 +302,7 @@ sub random_select
 
 	my $list_count	= scalar @tmp;
 	$play_file = $tmp[0] if defined $tmp[0];	# for non random
-	if($info{$dir}{random})
+	if($config::dirs{$dir}{random})
 	{
 		my $rand	= int(rand($list_count));
 		$play_file	= $tmp[$rand] if defined $tmp[$rand];
