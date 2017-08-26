@@ -5,12 +5,6 @@ use strict;
 
 use FindBin qw/$Bin/;
 
-if(lc $^O ne 'mswin32')
-{
-	use LWP::Simple qw(getstore);
-	use LWP::UserAgent;
-	use File::Fetch;
-}
 use Archive::Zip;
 
 print "\n\nChecking for Updates\n\n";
@@ -74,13 +68,10 @@ sub get
 		system($cmd);
 		return $save;
 	}
-
-	my $ua		= LWP::UserAgent->new();			$ua->show_progress(1);
-	my $response	= $ua->get($url);				die $response->status_line if !$response->is_success;
-	my $file	= $response->decoded_content(charset=>'none');
-
-	getstore($url,$save);
-
+	my $cmd = "wget -c -O '$save' '$url'";
+	print "$cmd\n";
+	system($cmd);
+	return $save;
 	return $save;
 }
 
