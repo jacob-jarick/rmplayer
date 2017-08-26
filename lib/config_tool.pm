@@ -57,15 +57,7 @@ sub show
 	}
 	);
 
-	$mw->protocol
-	(
-		'WM_DELETE_WINDOW',
-		sub
-		{
-			$mw->destroy;
-			exit;
-		}
-	);
+	$mw->protocol('WM_DELETE_WINDOW', sub { $mw->destroy; exit; } );
 
 	&display;
 	&plot;
@@ -232,14 +224,8 @@ sub display
 		-text=>'Set to Default',
 		-command => sub
 		{
-			if(lc $^O eq 'mswin32')
-			{
-				$config::app{main}{player_cmd} = '"C:/Program Files (x86)/VideoLAN/VLC/vlc.exe"';
-			}
-			else
-			{
-				$config::app{main}{player_cmd} = '/usr/bin/mpv';
-			}
+			$config::app{main}{player_cmd} = '"C:/Program Files (x86)/VideoLAN/VLC/vlc.exe"';
+			$config::app{main}{player_cmd} = '/usr/bin/mpv' if lc $^O ne 'mswin32';
 		}
 	)-> grid
 	(
@@ -253,7 +239,7 @@ sub display
 	$tab1->Button
 	(
 		-text=>'Clear',
-		-command => sub
+		-command=> sub
 		{
 			$config::app{main}{player_cmd} = '';
 		}
@@ -265,7 +251,6 @@ sub display
 		-padx=>		$pad_size,
 		-pady=>		$pad_size,
 	);
-
 
 	$col = 0;
 

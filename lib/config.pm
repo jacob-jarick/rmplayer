@@ -80,7 +80,7 @@ sub load
 	for my $ext(@tmp)
 	{
 		$ext =~ s/\s+//g;
-		push @tmp2, $ext;
+		push @tmp2, lc $ext;
 	}
 	$app{main}{media_extensions}	= join(',', sort {lc $a cmp lc $b} uniq @tmp2);
 	$media_ext			= join('|', sort {lc $a cmp lc $b} uniq @tmp2);
@@ -128,7 +128,7 @@ sub load_playlist
 	%parent_hash = ();
 	for my $k (keys %dirs)
 	{
-		&main::quit("load_playlist: \$dirs{$k}{path} is undef")				if ! defined $dirs{$k}{path};
+		&main::quit("load_playlist: \$dirs{$k}{path} is undef") if ! defined $dirs{$k}{path};
 
 		if (!-d $dirs{$k}{path})
 		{
