@@ -266,6 +266,7 @@ sub load_dir_stack
 sub trim_history
 {
 	my $dir = shift;
+	return if !$info{$dir}{count};
 
 	my $history_length = 0;
 	   $history_length = scalar(@{$info{$dir}{history}}) if defined $info{$dir}{history};

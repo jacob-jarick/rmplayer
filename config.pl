@@ -24,7 +24,14 @@ use misc;
 use jhash;
 use config;
 
+
+
 my $mw;
+
+my $book;
+my $tab1;
+my $tab2;
+
 my $frame_main;
 my $chart;
 my $chart_frame;
@@ -45,8 +52,7 @@ $mw->bind('<KeyPress>' => sub
 	if($Tk::event->K eq 'F5')
 	{
 		$frame_main->destroy;
-		&display;
-		&plot;
+		&refresh;
 	}
 }
 );
@@ -103,7 +109,7 @@ sub display
 		-fill=>		'both',
 		-anchor=>	'n'
 	);
-        my $book = $frame_top->NoteBook()
+        $book = $frame_top->NoteBook()
         ->pack
 	(
 		-side=>		'top',
@@ -115,7 +121,7 @@ sub display
 	# ----------------------------------------------------------------------------------------------------------
 	# Main prefences tab
 
-	my $tab1 = $book->add
+	$tab1 = $book->add
 	(
 		'Sheet 1',
 		-label=>'Main'
@@ -293,14 +299,8 @@ sub display
 		-text=>'Set to Default',
 		-command => sub
 		{
-			if(lc $^O eq 'mswin32')
-			{
-				$config::app{main}{kill_cmd} = 'taskkill /im vlc.exe > NUL 2>&1';
-			}
-			else
-			{
-				$config::app{main}{kill_cmd} = 'killall mpv';
-			}
+			$config::app{main}{kill_cmd} = 'killall mpv';
+			$config::app{main}{kill_cmd} = 'taskkill /im vlc.exe > NUL 2>&1' if lc $^O eq 'mswin32';
 		}
 	)-> grid
 	(
@@ -357,8 +357,8 @@ sub display
 	$col++;
 	$tab1->Button
 	(
-		-text=>'Set to Default',
-		-command => sub { $config::app{main}{sync_every} = 3; }
+		-text=>		'Set to Default',
+		-command=>	sub { $config::app{main}{sync_every} = 3; }
 	)-> grid
 	(
 		-row=>		$row++,
@@ -399,8 +399,8 @@ sub display
 	$col++;
 	$tab1->Button
 	(
-		-text=>'Set to Default',
-		-command => sub { $config::app{main}{play_count_limit} = 0; }
+		-text=>		'Set to Default',
+		-command=>	sub { $config::app{main}{play_count_limit} = 0; }
 	)-> grid
 	(
 		-row=>		$row++,
@@ -443,7 +443,7 @@ sub display
 
 	$row = 1;
 	$col = 0;
-	my $tab2 = $book->add
+	$tab2 = $book->add
 	(
 		'Sheet 2',
 		-label=>'Directories'
@@ -459,14 +459,7 @@ sub display
 			-command => sub
 			{
 				delete $config::dirs{$name};
-				&config::save;
-				&config::load;
-				$frame_main->destroy;
-				&config::load_playlist;
-				&config::load_dir_stack;
-
-				&display;
-				&plot;
+				&refresh;
 			}
 		)-> grid
 		(
@@ -508,6 +501,7 @@ sub display
 					$config::dirs{$name}{path} = $dd_dir;
 					$dir_text->Contents($config::dirs{$name}{path});
 				}
+				&refresh;
 
 			}
 		)-> grid
@@ -537,6 +531,7 @@ sub display
 		(
 			-text=>		'Recursive',
 			-variable=>	\$config::dirs{$name}{recursive},
+			-command=>	\&refresh,
 		)-> grid
 		(
 			-row=>		$row,
@@ -620,12 +615,7 @@ sub display
 		-text=>		'Pie Chart',
 		-variable=>	\$chart_type,
 		-value=>	'pie',
-		-command=>	sub
-		{
-			$chart->destroy;
-			&draw_chart;
-			&plot;
-		}
+		-command=>	sub { &refresh; }
 	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size,  -pady=> $pad_size,);
 
 	$frame_buttons->Radiobutton
@@ -633,12 +623,7 @@ sub display
 		-text=>		'Bar Chart',
 		-variable=>	\$chart_type,
 		-value=>	'bar',
-		-command=>	sub
-		{
-			$chart->destroy;
-			&draw_chart;
-			&plot;
-		}
+		-command=>	sub { &refresh; }
 
 	)-> grid(-row=>$row, -column=>$col++, -columnspan=>2, -sticky=> 'nw', -padx=>$pad_size, -pady=> $pad_size,);
 
@@ -661,14 +646,7 @@ sub display
 				$name =~ s/^.*(\\|\/)//;
 				$config::dirs{$name}{path}	= $dd_dir;
 				$config::dirs{$name}{enabled}	= 1;
-				&config::save;
-				$frame_main->destroy;
-				&config::load;
-				&config::load_playlist;
-				&config::load_dir_stack;
-
-				&display;
-				&plot;
+				&refresh;
 			}
 
 		}
@@ -794,5 +772,16 @@ sub quit
 	exit;
 }
 
+sub refresh
+{
+	$frame_main->destroy;
+	&config::save;
+	&config::load_playlist;
+	&config::load_dir_stack;
+	&display;
+	&plot;
+
+	$book->raise('Sheet 2');
+}
 
 1;
