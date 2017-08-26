@@ -104,6 +104,7 @@ if($config::app{main}{webserver})
 sub start_thread
 {
 	$server_pid = webuiserver->new(8080)->run();
+	exit;
 
 }
 

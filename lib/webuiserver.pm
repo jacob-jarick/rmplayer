@@ -1,5 +1,9 @@
 package webuiserver;
 
+use strict;
+use warnings;
+
+use threads ('yield', 'stack_size' => 64*4096, 'exit' => 'threads_only', 'stringify');
 use Data::Dumper::Concise;
 use HTTP::Server::Simple;
 use HTTP::Server::Simple::CGI;
@@ -152,9 +156,13 @@ sub r_play
 sub r_script_out
 {
 	my $cmd = shift;
-	my $tmp = `$cmd`;
+# 	my $tmp = `$cmd`;
+
+	my $thr = threads->create(sub { system($cmd); exit; });
+	$thr->detach();
+
 	print "<!-- \$cmd = '$cmd' -->\n";
-	print &html_insert($index_html, "<PRE>$tmp</PRE>", '/scripts', 2.5);
+	print &html_insert($index_html, "<PRE>$cmd</PRE>", '/scripts', 2.5);
 }
 
 sub r_next
@@ -232,7 +240,7 @@ sub r_status
 		push @tmp3, $_ if $_ ne '';
 	}
 
-	$que_string = join("<BR>\n", @tmp3);
+	my $que_string = join("<BR>\n", @tmp3);
 	$que_string = "<HR>QUEUED<BR>$que_string" if $que_string ne '' && $que_string =~ /\w/i;
 
  	print	$cgi->header;
@@ -258,7 +266,7 @@ sub r_history
 	my $cgi	= shift;
 	my $msg	= '';
 	my $c	= 0;
-	@tmp	= &readf($history_file);
+	my @tmp	= &readf($history_file);
 
 	if(scalar(@tmp) > 30)
 	{
@@ -390,7 +398,7 @@ sub r_select2
 	&config::load_info;
 
 	my @tmp	= sort {lc $a cmp lc $b} @{$info{$dir}{contents}};
-	@tmp	= shuffle(@tmp) if $dirs{$dir}{random};
+	@tmp	= shuffle(@tmp) if $config::dirs{$dir}{random};
 	@tmp	= @tmp[0 .. 24] if(scalar @tmp > 25);
 
 	for my $file (@tmp)
