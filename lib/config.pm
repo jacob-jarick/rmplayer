@@ -88,8 +88,10 @@ sub load
 
 	if (! -f $dirs_file)
 	{
-		print "ERROR: no dirs.ini file, please create before proceeding\n";
-		die "dirs file '$dirs_file' not found\n";
+		print "WARNING: no dirs.ini file\n";
+		%dirs = ();
+		return;
+# 		die "dirs file '$dirs_file' not found\n";
 	}
 	my $ini		= ReadINI $dirs_file;
 	my %hash	= %{$ini};

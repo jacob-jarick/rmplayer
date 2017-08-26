@@ -17,6 +17,27 @@ use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use rmvars;
+
+my $run_config = 0;
+if(defined $ARGV[0] && $ARGV[0] =~ /--conf|--setup/)
+{
+	$run_config++;
+}
+
+if(!-f $dirs_file || !-f $config_file)
+{
+	print "WARNING: config files not found, launching config tool\n";
+	$run_config++;
+}
+
+if($run_config)
+{
+	use config_tool;
+	&config_tool::show;
+	exit;
+}
+
+
 use webuiserver;
 use misc;
 use config;
@@ -24,6 +45,7 @@ use jhash;
 
 use threads ('yield', 'stack_size' => 64*4096, 'exit' => 'threads_only', 'stringify');
 use threads::shared;
+
 
 # =============================================================================
 # check for lock file
