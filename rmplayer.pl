@@ -293,13 +293,13 @@ sub play
 
 	my $cmd	= "$config::app{main}{player_cmd} \"$play_file\" > /dev/null 2>&1";
 
-	if (lc $^O eq 'mswin32')
+	if (lc $^O eq 'mswin32' || lc $^O eq 'mswin64')
 	{
 		$play_file =~ s/\//\\/g;	# some windows apps do not like / in paths
-		$cmd = "cmd /c \"$config::app{main}{player_cmd} \"$play_file\"\" > NUL" ;
+		$cmd = $config::app{main}{player_cmd}.' "'.$play_file.'" > NUL';
 	}
 
-# 	print "CMD = $cmd\n"  if $config::app{main}{debug};
+ 	print "play: CMD = $cmd\n"  if $config::app{main}{debug};
 	system($cmd);
 }
 
