@@ -203,7 +203,7 @@ sub get_keyboard
 	my $timeout = time + 0.3;
 # 	ReadMode 4;
 	ReadMode 0;
-	while ($timeout>time && not defined ($key = ReadKey(-1)))
+	while ($timeout>time && not defined ($key = ReadKey(1)))
 	{
 		sleep(0.01);	# No key yet
 
