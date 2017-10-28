@@ -19,3 +19,4 @@ cmd /c cpanm Tk::Chart::Pie
 cmd /c cpanm Tk::Graph
 cmd /c cpanm Archive::Zip
 cmd /c cpanm FindBin
+cmd /c cpanm inc::Module::Install
