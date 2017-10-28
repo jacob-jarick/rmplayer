@@ -47,14 +47,15 @@ sub show
 	$mw = new MainWindow; # Main Window
 	$mw->title("rmplayer.pl config");
 
-	$mw->bind('<KeyPress>' => sub
-	{
-		if($Tk::event->K eq 'F5')
+	$mw->bind
+	(	'<KeyPress>' => sub
 		{
-			$frame_main->destroy;
-			&refresh;
+			if($Tk::event->K eq 'F5')
+			{
+				$frame_main->destroy;
+				&refresh;
+			}
 		}
-	}
 	);
 
 	$mw->protocol('WM_DELETE_WINDOW', sub { $mw->destroy; exit; } );

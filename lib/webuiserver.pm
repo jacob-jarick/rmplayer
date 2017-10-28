@@ -8,10 +8,8 @@ use Data::Dumper::Concise;
 use HTTP::Server::Simple;
 use HTTP::Server::Simple::CGI;
 use base qw(HTTP::Server::Simple::CGI);
-# use CGI::Carp qw(fatalsToBrowser);
 use CGI;
 use List::Util 'shuffle';
-# use Proc::Background;
 
 use FindBin qw/$Bin/;
 use lib			$Bin;
@@ -156,7 +154,6 @@ sub r_play
 sub r_script_out
 {
 	my $cmd = shift;
-# 	my $tmp = `$cmd`;
 
 	my $thr = threads->create(sub { system($cmd); exit; });
 	$thr->detach();

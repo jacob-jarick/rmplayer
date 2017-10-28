@@ -88,7 +88,6 @@ $server_pid = 0;
 my $thr;
 if($config::app{main}{webserver})
 {
-# 	$server_pid = webuiserver->new(8080)->background();
 	$thr = threads->create('start_thread');
 	$thr->detach();
 }
@@ -97,7 +96,6 @@ sub start_thread
 {
 	$server_pid = webuiserver->new(8080)->run();
 	exit;
-
 }
 
 # =============================================================================
@@ -453,7 +451,6 @@ sub update_ignore
 	$ignore_hash{$file} = 1;
 	&file_append($ignore_file, $file);
 }
-
 
 sub dir_stack_select
 {
