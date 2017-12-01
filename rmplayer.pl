@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-
 $| = 1;
 
 use warnings;
@@ -37,15 +36,14 @@ if($run_config)
 	exit;
 }
 
-
 use webuiserver;
 use misc;
 use config;
 use jhash;
 
+# threads used only to launch the webserver
 use threads ('yield', 'stack_size' => 64*4096, 'exit' => 'threads_only', 'stringify');
 use threads::shared;
-
 
 # =============================================================================
 # check for lock file
@@ -54,14 +52,8 @@ use threads::shared;
 if(-f $lock_file)	# check if there is already a lockfile
 {
 	my @tmp		= &readf($lock_file);
-	my $pid		= $tmp[0];
 	my $exists	= 0;
-
-	if($pid =~ /^(\d+)/)
-	{
-		$pid = $1;
-		$exists = kill 0, $pid;
-	}
+	$exists		= kill 0, $1 if $tmp[0] =~ /^(\d+)/;
 
 	if(!$exists)
 	{
@@ -96,7 +88,6 @@ $server_pid = 0;
 my $thr;
 if($config::app{main}{webserver})
 {
-# 	$server_pid = webuiserver->new(8080)->background();
 	$thr = threads->create('start_thread');
 	$thr->detach();
 }
@@ -105,7 +96,6 @@ sub start_thread
 {
 	$server_pid = webuiserver->new(8080)->run();
 	exit;
-
 }
 
 # =============================================================================
@@ -169,7 +159,6 @@ while(1)
 		$STOP = 1;
 	}
 
-
 	$file = &check_que;
 	$file = &random_select if($file eq '');
 
@@ -203,7 +192,7 @@ sub get_keyboard
 	my $timeout = time + 0.3;
 # 	ReadMode 4;
 	ReadMode 0;
-	while ($timeout>time && not defined ($key = ReadKey(-1)))
+	while ($timeout>time && not defined ($key = ReadKey(1)))
 	{
 		sleep(0.01);	# No key yet
 
@@ -240,18 +229,18 @@ sub history_add
 
 		my $found = 0;
 
-		for my $i(0 .. $#contents)
+		for my $tmp_file(@contents)
 		{
 			if($found)
 			{
-				delete $history_hash{$contents[$i]};
+				delete $history_hash{$tmp_file};
 				next;
 			}
 
-			push @{ $info{$parent}{history} }, $contents[$i];
+			push @{ $info{$parent}{history} }, $tmp_file;
 
-			$history_hash{$contents[$i]}	= 1;
-			$found				= 1 if $file eq $contents[$i];
+			$history_hash{$tmp_file}	= 1;
+			$found				= 1 if $file eq $tmp_file;
 		}
 	}
 	else
@@ -282,24 +271,18 @@ sub play
 	my $name = $play_file;
 	$name =~ s/^.*\///;
 
-	if (! -f $play_file)
-	{
-		print "\nERROR: play file '$play_file' does not exist\n";
-		&rmp_exit;
-	}
-
 	print "* $name\n";
 	&save_file($current_file, $play_file);
 
 	my $cmd	= "$config::app{main}{player_cmd} \"$play_file\" > /dev/null 2>&1";
 
-	if (lc $^O eq 'mswin32')
+	if (lc $^O eq 'mswin32' || lc $^O eq 'mswin64')
 	{
 		$play_file =~ s/\//\\/g;	# some windows apps do not like / in paths
-		$cmd = "cmd /c \"$config::app{main}{player_cmd} \"$play_file\"\" > NUL" ;
+		$cmd = $config::app{main}{player_cmd}.' "'.$play_file.'" > NUL';
 	}
 
-# 	print "CMD = $cmd\n"  if $config::app{main}{debug};
+ 	print "play: CMD = $cmd\n"  if $config::app{main}{debug};
 	system($cmd);
 }
 
@@ -315,9 +298,8 @@ sub random_select
 	}
 
 	my @tmp		= ();
-	my @tmp2	= @{$info{$dir}{contents}};
 
-	for my $file(@tmp2)
+	for my $file(@{$info{$dir}{contents}})
 	{
 		next if defined $history_hash{$file};
 		push @tmp, $file;
@@ -330,8 +312,6 @@ sub random_select
 		my $rand	= int(rand($list_count));
 		$play_file	= $tmp[$rand] if defined $tmp[$rand];
 	}
-
-
 
 	if($play_file eq '')
 	{
@@ -349,8 +329,8 @@ sub check_que
 
 	my $play_file			= '';
 	my $mod_time			= (stat($que_file))[9];
-	$mod_time			= 0 if !defined $mod_time; # for windows
-	$last_modtime{$que_file}	= 0 if ! defined $last_modtime{$que_file};
+	$mod_time			= -1 if ! defined $mod_time; # for windows
+	$last_modtime{$que_file}	= 0  if ! defined $last_modtime{$que_file};
 
 	return '' if $mod_time == $last_modtime{$que_file};
 
@@ -359,10 +339,10 @@ sub check_que
 	my @tmp		= &readf($que_file);
 	$play_file	= $tmp[0]		if defined $tmp[0];
 
-	return '' if $play_file eq '';
-
 	shift @tmp;
  	&save_file_arr($que_file, \@tmp);
+
+	return '' if $play_file eq '';
 
  	print "* QUEUED: '$play_file'\n";
 
@@ -454,7 +434,7 @@ sub load_ignore_list
 
 	for my $file (@ignore)
 	{
-		print "DEBUG: adding '$file' to ignore hash\n" if $config::app{main}{debug};
+		print "DEBUG: IGNORE '$file'\n" if $config::app{main}{debug};
 		$ignore_hash{$file} = 1;
 	}
 }
@@ -471,7 +451,6 @@ sub update_ignore
 	$ignore_hash{$file} = 1;
 	&file_append($ignore_file, $file);
 }
-
 
 sub dir_stack_select
 {
