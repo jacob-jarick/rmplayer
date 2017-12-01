@@ -47,14 +47,15 @@ sub show
 	$mw = new MainWindow; # Main Window
 	$mw->title("rmplayer.pl config");
 
-	$mw->bind('<KeyPress>' => sub
-	{
-		if($Tk::event->K eq 'F5')
+	$mw->bind
+	(	'<KeyPress>' => sub
 		{
-			$frame_main->destroy;
-			&refresh;
+			if($Tk::event->K eq 'F5')
+			{
+				$frame_main->destroy;
+				&refresh;
+			}
 		}
-	}
 	);
 
 	$mw->protocol('WM_DELETE_WINDOW', sub { $mw->destroy; exit; } );
@@ -224,7 +225,7 @@ sub display
 		-text=>'Set to Default',
 		-command => sub
 		{
-			$config::app{main}{player_cmd} = '"C:/Program Files (x86)/VideoLAN/VLC/vlc.exe"';
+			$config::app{main}{player_cmd} = '"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe"';
 			$config::app{main}{player_cmd} = '/usr/bin/mpv' if lc $^O ne 'mswin32';
 		}
 	)-> grid
@@ -297,10 +298,7 @@ sub display
 	$tab1->Button
 	(
 		-text=>'Clear',
-		-command => sub
-		{
-			$config::app{main}{kill_cmd} = '';
-		}
+		-command=> sub { $config::app{main}{kill_cmd} = ''; }
 	)-> grid
 	(
 		-row=>		$row++,
@@ -427,6 +425,7 @@ sub display
 
 	$row = 1;
 	$col = 0;
+
 	$tab2 = $book->add
 	(
 		'Sheet 2',
@@ -472,7 +471,7 @@ sub display
 		$tab2->Button
 		(
 			-text=>'Select',
-			-command => sub
+			-command=> sub
 			{
 				my $dd_dir = $mw->chooseDirectory
 				(
@@ -486,7 +485,6 @@ sub display
 					$dir_text->Contents($config::dirs{$name}{path});
 				}
 				&refresh;
-
 			}
 		)-> grid
 		(

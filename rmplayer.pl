@@ -189,7 +189,7 @@ sub rmp_exit
 sub get_keyboard
 {
 	my $key = '';
-	my $timeout = time + 0.3;
+	my $timeout = time + 0.2;
 # 	ReadMode 4;
 	ReadMode 0;
 	while ($timeout>time && not defined ($key = ReadKey(1)))
