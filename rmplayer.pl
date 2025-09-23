@@ -238,7 +238,7 @@ sub history_add
 
 			push @{ $info{$parent}{history} }, $tmp_file;
 
-			$found				= 1 if $file eq $tmp_file;
+			$found = 1 if $file eq $tmp_file;
 		}
 	}
 	else
@@ -327,6 +327,7 @@ sub random_select
 
 	return $play_file;
 }
+
 # ------------------------------
 # read in que file
 
@@ -334,9 +335,9 @@ sub check_que
 {
 	return '' if !-f $que_file;
 
-	my $play_file			= '';
-	my $mod_time			= (stat($que_file))[9];
-	$mod_time			= -1 if ! defined $mod_time; # for windows
+	my $play_file				= '';
+	my $mod_time				= (stat($que_file))[9];
+	$mod_time					= -1 if ! defined $mod_time; # for windows
 	$last_modtime{$que_file}	= 0  if ! defined $last_modtime{$que_file};
 
 	return '' if $mod_time == $last_modtime{$que_file};
@@ -360,9 +361,9 @@ sub check_que
 
 sub check_cmds
 {
-	my $mod_time		= (stat($cmd_file))[9];
-	$mod_time		= 0 if !defined $mod_time; # for windows
-	$last_modtime{$cmd_file}= 0 if ! defined $last_modtime{$cmd_file};
+	my $mod_time				= (stat($cmd_file))[9];
+	$mod_time					= 0 						if !defined $mod_time; # for windows
+	$last_modtime{$cmd_file}	= 0 						if ! defined $last_modtime{$cmd_file};
 
 	return if $mod_time == $last_modtime{$cmd_file};
 

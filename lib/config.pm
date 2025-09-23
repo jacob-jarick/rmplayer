@@ -27,8 +27,19 @@ $app{main}{play_count_limit}	= 0;
 $app{main}{sync_every}			= 1;
 $app{main}{debug}				= 0;
 $app{main}{webserver}			= 1;
-$app{main}{kill_cmd}			= '';
-$app{main}{player_cmd}			= '';
+
+# Set OS-appropriate defaults for media player commands
+if (lc $^O eq 'mswin32')
+{
+	$app{main}{player_cmd}		= 'C:\Program Files\VideoLAN\VLC\vlc.exe';
+	$app{main}{kill_cmd}		= 'taskkill /im vlc.exe > NUL 2>&1';
+}
+else
+{
+	$app{main}{player_cmd}		= 'mpv';
+	$app{main}{kill_cmd}		= 'killall mpv';
+}
+
 $app{main}{media_extensions}	= $media_extensions_default;
 
 our %dir_defaults				= ();

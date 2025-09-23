@@ -225,7 +225,7 @@ sub display
 		-text=>'Set to Default',
 		-command => sub
 		{
-			$config::app{main}{player_cmd} = '"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe"';
+			$config::app{main}{player_cmd} = '"C:\Program Files\VideoLAN\VLC\vlc.exe"';
 			$config::app{main}{player_cmd} = '/usr/bin/mpv' if lc $^O ne 'mswin32';
 		}
 	)-> grid

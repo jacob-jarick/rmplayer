@@ -13,11 +13,10 @@ use Data::Dumper::Concise;
 use List::MoreUtils qw(uniq);
 
 use FindBin qw/$Bin/;
-use lib			$Bin;
-use lib			"$Bin/lib";
+use lib		$Bin;
+use lib		"$Bin/lib";
 
 use rmvars;
-
 
 sub ci_sort
 {
@@ -45,35 +44,35 @@ sub clean_arr
 
 sub null_file
 {
-        my $file = shift;
+	my $file = shift;
 
-        open(FILE, ">$file") or &main::quit("ERROR: sub null_file, Couldnt open $file to write to. $!");
-        close(FILE);
+	open(FILE, ">$file") or &main::quit("ERROR: sub null_file, Couldnt open $file to write to. $!");
+	close(FILE);
 }
 
 sub save_file_arr
 {
-        my $file	= shift;
-        my $ref		= shift;
-        my @arr		= @$ref;
+	my $file	= shift;
+	my $ref		= shift;
+	my @arr		= @$ref;
 
 	&save_file($file, join("\n", @arr));
 }
 
 sub save_file
 {
-        my $file	= shift;
-        my $string	= shift;
+	my $file	= shift;
+	my $string	= shift;
 
-        &main::quit("save_file \$file is undef")	if ! defined $file;
-        &main::quit("save_file \$string is undef")	if ! defined $string;
+	&main::quit("save_file \$file is undef")	if ! defined $file;
+	&main::quit("save_file \$string is undef")	if ! defined $string;
 
-        $string =~ s/^\n//g;		# no blank line @ start of file
-        $string =~ s/\n\n+/\n/g;	# no blank lines in file
+	$string =~ s/^\n//g;		# no blank line @ start of file
+	$string =~ s/\n\n+/\n/g;	# no blank lines in file
 
-        open(FILE, ">$file") or &main::quit("ERROR: sub save_file, Couldnt open $file to write to. $!");
-        print FILE $string;
-        close(FILE);
+	open(FILE, ">$file") or &main::quit("ERROR: sub save_file, Couldnt open $file to write to. $!");
+	print FILE $string;
+	close(FILE);
 }
 
 sub file_append
@@ -82,8 +81,8 @@ sub file_append
 	my $string	= shift;
 
 	open(FILE, ">>$file") or &main::quit("ERROR: Couldnt open $file to append to. $!");
-        print FILE $string;
-        close(FILE);
+	print FILE $string;
+	close(FILE);
 }
 
 #--------------------------------------------------------------------------------------------------------------
@@ -96,11 +95,11 @@ sub readf
 	&main::quit("ERROR readf: \$file is undef") if ! defined $file;
 	&main::quit("misc::readf WARNING: file '$file' not found\n") if !-f $file;
 
-        open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
-        my @file = <FILE>;
-        close(FILE);
+	open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
+	my @file = <FILE>;
+	close(FILE);
 
-        return @file;
+	return @file;
 }
 
 sub trim_log
@@ -127,15 +126,15 @@ sub trim_log
 
 sub readf_clean
 {
-        my $file = shift;
+	my $file = shift;
 
-        open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
-        my @file = <FILE>;
-        close(FILE);
+	open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
+	my @file = <FILE>;
+	close(FILE);
 
 	my @tmp;
-        for my $l(@file)
-        {
+	for my $l (@file)
+	{
 		# clean file of empty lines
 		$l =~ s/\n+//g;
 		$l =~ s/\s*#.*?$//g;
@@ -144,7 +143,7 @@ sub readf_clean
 
 		push @tmp, $l;
 	}
-        return sort {lc $a cmp lc $b} @tmp;
+	return sort {lc $a cmp lc $b} @tmp;
 }
 
 #--------------------------------------------------------------------------------------------------------------
@@ -153,19 +152,19 @@ sub readf_clean
 
 sub readsf
 {
-        my $file = shift;
+	my $file = shift;
 
-        open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
-        my @file = <FILE>;
-        close(FILE);
+	open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
+	my @file = <FILE>;
+	close(FILE);
 
-        # clean file of empty lines
-        $file = join('', sort @file);
-        $file =~ s/^\n//g;
-        $file =~ s/\n\n+/\n/g;
-        @file = split(/\n+/, $file);
+	# clean file of empty lines
+	$file = join('', sort @file);
+	$file =~ s/^\n//g;
+	$file =~ s/\n\n+/\n/g;
+	@file = split(/\n+/, $file);
 
-        return @file;
+	return @file;
 }
 
 #--------------------------------------------------------------------------------------------------------------
@@ -175,14 +174,14 @@ sub readsf
 sub readsjf
 {
 	my $file = shift;
-        open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
-        my @file = <FILE>;
-        close(FILE);
-        $file = join('', sort @file);
-        $file =~ s/^\n//g;
-        $file =~ s/\n\n+/\n/g;
+	open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
+	my @file = <FILE>;
+	close(FILE);
+	$file = join('', sort @file);
+	$file =~ s/^\n//g;
+	$file =~ s/\n\n+/\n/g;
 
-        return $file;
+	return $file;
 }
 
 #--------------------------------------------------------------------------------------------------------------
@@ -191,12 +190,12 @@ sub readsjf
 
 sub readjf
 {
-        my $file = shift;
+	my $file = shift;
 
-        open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
-        my @file = <FILE>;
-        close(FILE);
-        return join('', @file);
+	open(FILE, "$file") or &main::quit("ERROR: Couldnt open $file to read.\n");
+	my @file = <FILE>;
+	close(FILE);
+	return join('', @file);
 }
 
 
@@ -252,8 +251,8 @@ sub get_file_parent_dir
 sub get_file_name
 {
 	my $file_path	= shift;
-	$file_path	= &get_file_path($file_path);
-	my @tmp		= split(/\//, $file_path);
+	$file_path		= &get_file_path($file_path);
+	my @tmp			= split(/\//, $file_path);
 
 	return $tmp[$#tmp];
 }
@@ -286,7 +285,8 @@ sub dir_files_recursive
 
 	# -- make sure we dont have . and .. in array --
 	my @subdirs = &get_sub_dirs($dir);
-# 	print Dumper(\@subdirs);
+
+	# print Dumper(\@subdirs);
 	for my $path(@subdirs)
 	{
 		push @dirlist_clean, &dir_files($path);
@@ -313,7 +313,7 @@ sub get_sub_dirs
 		my $path = "$dir/$item";
 		$path =~ s/\\/\//g;
 		next if !-d $path;
-# 		print "path = $path\n";
+		# print "path = $path\n";
 
 		push @subdirs, $path;
 		push @subdirs, &get_sub_dirs($path);
