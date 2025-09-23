@@ -72,7 +72,6 @@ sub get
 	print "$cmd\n";
 	system($cmd);
 	return $save;
-	return $save;
 }
 
 sub check_for_update

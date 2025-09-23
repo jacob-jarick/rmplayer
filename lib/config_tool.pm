@@ -93,7 +93,7 @@ sub display
 
 	my $frame_top = $frame_main->Frame
 	(
-		-height => 10,
+		-height=>	10,
 	)->pack
 	(
 		-side=>		'top',
@@ -101,7 +101,7 @@ sub display
 		-fill=>		'both',
 		-anchor=>	'n'
 	);
-        $book = $frame_top->NoteBook()
+        $book =		$frame_top->NoteBook()
         ->pack
 	(
 		-side=>		'top',
@@ -135,14 +135,14 @@ sub display
 	$tab1->Entry
 	(
 		-textvariable=>	\$config::app{main}{media_extensions},
-		-width=>	$entry_width,
+		-width=>		$entry_width,
 	)-> grid
 	(
-		-row=>		$row,
-		-column=>	$col++,
-		-sticky=>	'nw',
-		-padx=>		$pad_size,
-		-pady=>		$pad_size,
+		-row=>			$row,
+		-column=>		$col++,
+		-sticky=>		'nw',
+		-padx=>			$pad_size,
+		-pady=>			$pad_size,
 	);
 
 	$col++;
@@ -165,8 +165,8 @@ sub display
 
 	$tab1->Button
 	(
-		-text=>'Clear',
-		-command => sub
+		-text=>		'Clear',
+		-command=>	sub
 		{
 			$config::app{main}{media_extensions} = '';
 		}
@@ -207,8 +207,8 @@ sub display
 
 	$tab1->Button
 	(
-		-text=>'Select Player',
-		-command => sub
+		-text=>		'Select Player',
+		-command=>	sub
 		{
 			&select_player;
 		}
@@ -260,29 +260,29 @@ sub display
 	$tab1->Label(-text=>'Kill Player Command')
 	-> grid
 	(
-		-row=>		$row,
-		-column=>	$col++,
-		-sticky=>	'nw',
-		-padx=>		$pad_size,
-		-pady=>		$pad_size,
+		-row=>			$row,
+		-column=>		$col++,
+		-sticky=>		'nw',
+		-padx=>			$pad_size,
+		-pady=>			$pad_size,
 	);
 	$tab1->Entry
 	(
 		-textvariable=>	\$config::app{main}{kill_cmd},
-		-width=>	$entry_width,
+		-width=>		$entry_width,
 	)-> grid
 	(
-		-row=>		$row,
-		-column=>	$col++,
-		-sticky=>	'nw',
-		-padx=>		$pad_size,
-		-pady=>		$pad_size,
+		-row=>			$row,
+		-column=>		$col++,
+		-sticky=>		'nw',
+		-padx=>			$pad_size,
+		-pady=>			$pad_size,
 	);
 	$col++;
 	$tab1->Button
 	(
-		-text=>'Set to Default',
-		-command => sub
+		-text=>		'Set to Default',
+		-command=>	sub
 		{
 			$config::app{main}{kill_cmd} = 'killall mpv';
 			$config::app{main}{kill_cmd} = 'taskkill /im vlc.exe > NUL 2>&1' if lc $^O eq 'mswin32';
@@ -297,8 +297,8 @@ sub display
 	);
 	$tab1->Button
 	(
-		-text=>'Clear',
-		-command=> sub { $config::app{main}{kill_cmd} = ''; }
+		-text=>		'Clear',
+		-command=>	sub { $config::app{main}{kill_cmd} = ''; }
 	)-> grid
 	(
 		-row=>		$row++,
@@ -324,30 +324,30 @@ sub display
 	$tab1->Spinbox
 	(
 		-textvariable=>	\$config::app{main}{sync_every},
-		-from=>		1,
-		-to=>		10,
+		-from=>			1,
+		-to=>			10,
 		-increment=>	1,
-		-width=>	8
+		-width=>		8
 	)-> grid
 	(
-		-row=>		$row,
-		-column=>	$col++,
-		-sticky=>	'nw',
-		-padx=>		$pad_size,
-		-pady=>		$pad_size,
+		-row=>			$row,
+		-column=>		$col++,
+		-sticky=>		'nw',
+		-padx=>			$pad_size,
+		-pady=>			$pad_size,
 	);
 	$col++;
 	$tab1->Button
 	(
-		-text=>		'Set to Default',
-		-command=>	sub { $config::app{main}{sync_every} = 3; }
+		-text=>			'Set to Default',
+		-command=>		sub { $config::app{main}{sync_every} = 3; }
 	)-> grid
 	(
-		-row=>		$row++,
-		-column=>	$col++,
-		-sticky=>	'nw',
-		-padx=>		$pad_size,
-		-pady=>		$pad_size,
+		-row=>			$row++,
+		-column=>		$col++,
+		-sticky=>		'nw',
+		-padx=>			$pad_size,
+		-pady=>			$pad_size,
 	);
 
 	$col = 0;
@@ -366,17 +366,17 @@ sub display
 	$tab1->Spinbox
 	(
 		-textvariable=>	\$config::app{main}{play_count_limit},
-		-from=>		0,
-		-to=>		50,
+		-from=>			0,
+		-to=>			50,
 		-increment=>	1,
-		-width=>	8
+		-width=>		8
 	)-> grid
 	(
-		-row=>		$row,
-		-column=>	$col++,
-		-sticky=>	'nw',
-		-padx=>		$pad_size,
-		-pady=>		$pad_size,
+		-row=>			$row,
+		-column=>		$col++,
+		-sticky=>		'nw',
+		-padx=>			$pad_size,
+		-pady=>			$pad_size,
 	);
 	$col++;
 	$tab1->Button
@@ -558,11 +558,11 @@ sub display
 		my $spinbox = $tab2->Spinbox
 		(
 			-textvariable=>	\$config::dirs{$name}{weight},
-			-from=>		1,
-			-to=>		100,
+			-from=>			1,
+			-to=>			100,
 			-increment=>	1,
-			-width=>	8,
-			-command=>	sub
+			-width=>		8,
+			-command=>		sub
 			{
 				&config::load_dir_stack;
 				&plot;
@@ -583,7 +583,7 @@ sub display
 
 	my $frame_buttons = $frame_main->Frame
 	(
- 		-height => 2,
+ 		-height=>	2,
 	)->pack
 	(
 		-side=>		'bottom',
@@ -610,16 +610,31 @@ sub display
 		-variable=>	\$chart_type,
 		-value=>	'pie',
 		-command=>	sub { &refresh; }
-	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size,  -pady=> $pad_size,);
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
+	);
 
 	$frame_buttons->Radiobutton
 	(
-		-text=>		'Bar Chart',
-		-variable=>	\$chart_type,
-		-value=>	'bar',
-		-command=>	sub { &refresh; }
+		-text=>			'Bar Chart',
+		-variable=>		\$chart_type,
+		-value=>		'bar',
+		-command=>		sub { &refresh; }
 
-	)-> grid(-row=>$row, -column=>$col++, -columnspan=>2, -sticky=> 'nw', -padx=>$pad_size, -pady=> $pad_size,);
+	)-> grid
+	(
+		-row=>			$row,
+		-column=>		$col++,
+		-columnspan=>	2,
+		-sticky=>		'nw',
+		-padx=>			$pad_size,
+		-pady=>			$pad_size,
+	);
 
 	$row++;
 	$col=0;
@@ -629,34 +644,52 @@ sub display
 		-text=>		'Add Directory',
 		-command=>	sub
 		{
-			my $dd_dir = $mw->chooseDirectory
-			(
-				-title=>"Choose a directory"
-			);
+			my $dd_dir = $mw->chooseDirectory(-title=> "Choose a directory");
 
 			if($dd_dir)
 			{
-				my $name = lc $dd_dir;
-				$name =~ s/^.*(\\|\/)//;
-				$config::dirs{$name}{path}	= $dd_dir;
+				my $name 						= lc $dd_dir;
+				$name 							=~ s/^.*(\\|\/)//;
+				$config::dirs{$name}{path}		= $dd_dir;
 				$config::dirs{$name}{enabled}	= 1;
 				&refresh;
 			}
 
 		}
-	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size, -pady=> $pad_size,);
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
+	);
 
 	$frame_buttons->Button
 	(
 		-text=>		'Save',
 		-command=>	sub { &config::save; }
-	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size, -pady=> $pad_size,);
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
+	);
 
 	$frame_buttons -> Button
 	(
 		-text=>		'Close',
 		-command=>	sub { destroy $mw; }
-	)-> grid(-row=>$row, -column=>$col++, -sticky=> 'nw', -padx=>$pad_size,  -pady=> $pad_size,);
+	)-> grid
+	(
+		-row=>		$row,
+		-column=>	$col++,
+		-sticky=>	'nw',
+		-padx=>		$pad_size,
+		-pady=>		$pad_size,
+	);
 
 	&draw_chart;
 }
@@ -679,9 +712,9 @@ sub select_player
 	}
 	if(defined $filename)
 	{
-		$filename =~ s/\\/\//g;
-		$filename = "\"$filename\"" if $filename =~ m/\s+/;
-		$config::app{main}{player_cmd} = $filename;
+		$filename 						=~ s/\\/\//g;
+		$filename 						= "\"$filename\"" if $filename =~ m/\s+/;
+		$config::app{main}{player_cmd}	= $filename;
 	}
 }
 
@@ -725,36 +758,36 @@ sub draw_chart
 	{
 		$chart = $chart_frame->Pie
 		(
-			-title=>	'Weighted Playlist' . "\n",
+			-title=>		'Weighted Playlist' . "\n",
 			-linewidth=>	3,
 			-background=>	'#bababa',
 			-titlefont=>	'{Arial} 16 {bold}',
 			-legendfont=>	'{Arial} 12 {bold}',
 		)->pack
 		(
-			-side=>		'bottom',
-			-expand=>	1,
-			-fill=>		'both',
-			-anchor=>	's'
+			-side=>			'bottom',
+			-expand=>		1,
+			-fill=>			'both',
+			-anchor=>		's'
 		);
 	}
 	elsif($chart_type eq 'bar')
 	{
 		$chart = $chart_frame->Graph
 		(
-			-type=>		'HBars',
+			-type=>			'HBars',
 			-sortnames=>	'alpha',
-			-font=>		'{Arial} 12 {bold}',
-			-fill=>		'both',
-			-legend=>	0,
-			-padding=>	([15,20,20,120])
+			-font=>			'{Arial} 12 {bold}',
+			-fill=>			'both',
+			-legend=>			0,
+			-padding=>		([15,20,20,120])
 
 		)->pack
 		(
-			-side=>		'bottom',
-			-expand=>	1,
-			-fill=>		'both',
-			-anchor=>	's'
+			-side=>			'bottom',
+			-expand=>		1,
+			-fill=>			'both',
+			-anchor=>		's'
 		);
 	}
 }

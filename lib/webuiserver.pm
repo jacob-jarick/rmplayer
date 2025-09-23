@@ -85,7 +85,7 @@ sub handle_request
 		else
 		{
 			print "HTTP/1.0 404 Not found\r\n";
-			print	$cgi->header,
+			print $cgi->header,
 				html_insert($index_html, "handle_request Path '$path' Not Found. file: $web_dir$path does not exist\n"),
 				$cgi->end_html;
 		}
@@ -116,7 +116,7 @@ sub r_stop
 	&config::load;
 	system($config::app{main}{kill_cmd} );
 
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, 'STOPPING', '/stopped');
 }
 
@@ -127,7 +127,7 @@ sub r_reload
 
 	file_append( $cmd_file, 'RELOAD');	# append to quefile for cmd
 
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, 'RELOADING PLAYLIST', '/');
 }
 
@@ -136,18 +136,18 @@ sub r_stopped
 	my $cgi  = shift;
 	return if !ref $cgi;
 
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, 'STOPPED');
 }
 
 sub r_play
 {
-	my $cgi  = shift;
+	my $cgi = shift;
 	return if !ref $cgi;
 
 	file_append( $cmd_file, 'PLAY');	# append to quefile for cmd
 
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, 'Resuming Playback', '/');
 }
 
@@ -172,7 +172,7 @@ sub r_next
 	&config::load;
 	system($config::app{main}{kill_cmd} );
 
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, 'skipping to next file', '/');
 }
 
@@ -279,9 +279,10 @@ sub r_history
 		next if ! defined $file || !$file;
 		chomp $file;
 		next if $file !~ /\S+/;
+
 		my $fn		= $file;
-		$fn		=~ s/^.*(\\|\/)(.*?)$/$2/;
-		$fn		= &format_fn($2);
+		$fn			=~ s/^.*(\\|\/)(.*?)$/$2/;
+		$fn			= &format_fn($2);
 
 		my %h		= ();
 		$h{c}		= $c;
@@ -369,12 +370,12 @@ sub r_scripts
 		$c++;
 
 		$msg .="
-		<a href=\"/scripts/$s\">
-		<div><h2 class='button'>$s</h2></div>
-		</a>
-		";
+			<a href=\"/scripts/$s\">
+			<div><h2 class='button'>$s</h2></div>
+			</a>
+			";
 	}
- 	print	$cgi->header;
+ 	print $cgi->header;
 	print &html_insert($index_html, $msg);
 }
 
@@ -441,7 +442,7 @@ sub r_select
 
 sub r_browse
 {
-	my $cgi	 = shift;
+	my $cgi	= shift;
 	my $msg	= '';
 	my $c	= 1;
 	my $ref	= &jhash::load($config::info_file);
@@ -475,7 +476,7 @@ sub r_browse2
 	my %hash = ();
 	for my $file ( (@{$info{$dir}{'contents'}}) )
 	{
-		my $fn		= $file;
+		my $fn	= $file;
 		$fn		=~ m/^.*(\\|\/)(.*?)$/;
 		$fn		= &format_fn($2);
 		$hash{$fn}	= $file;
@@ -549,7 +550,7 @@ sub r_enable2
 
 sub r_enable
 {
-	my $cgi  = shift;
+	my $cgi = shift;
 	my $msg = 're-Enable Directory';
 	&config::load;
 
@@ -572,7 +573,7 @@ sub r_enable
 sub format_fn
 {
 	my $f		= shift;
-	$f		=~ /^(.+)\.(.+?)$/;
+	$f			=~ /^(.+)\.(.+?)$/;
 	my $name	= $1;
 	my $ext		= $2;
 	$name		=~ s/(\.|_)/ /g;

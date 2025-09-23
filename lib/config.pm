@@ -9,37 +9,37 @@ use Data::Dumper::Concise;
 use List::MoreUtils qw(uniq);
 
 use FindBin qw/$Bin/;
-use lib			$Bin;
-use lib			"$Bin/lib";
+use lib		"$Bin";
+use lib		"$Bin/lib";
 
 use rmvars;
 use misc;
 
 use Config::IniHash;
 
-our %app			= ();
-our %dirs			= ();
+our %app	= ();
+our %dirs	= ();
 
-our $media_extensions_default	= 'mp4,m4v,mpg,mpeg,avi,asf,wmf,wmv,mkv,mov';
+our $media_extensions_default	= '3gp,avi,flv,m2v,m4v,mkv,mov,mp4,mpeg,mpg,mts,ogv,ts,webm,wmv';
 
 # set application defaults
 $app{main}{play_count_limit}	= 0;
-$app{main}{sync_every}		= 1;
-$app{main}{debug}		= 0;
-$app{main}{webserver}		= 1;
-$app{main}{kill_cmd}		= '';
-$app{main}{player_cmd}		= '';
+$app{main}{sync_every}			= 1;
+$app{main}{debug}				= 0;
+$app{main}{webserver}			= 1;
+$app{main}{kill_cmd}			= '';
+$app{main}{player_cmd}			= '';
 $app{main}{media_extensions}	= $media_extensions_default;
 
-our %dir_defaults		= ();
+our %dir_defaults				= ();
 
-$dir_defaults{recursive}	= 0;
-$dir_defaults{enabled}		= 1;
-$dir_defaults{random}		= 1;
-$dir_defaults{weight}		= 100;
-$dir_defaults{filter}		= '';
+$dir_defaults{recursive}		= 0;
+$dir_defaults{enabled}			= 1;
+$dir_defaults{random}			= 1;
+$dir_defaults{weight}			= 100;
+$dir_defaults{filter}			= '';
 $dir_defaults{ignore_filter}	= '';
-$dir_defaults{path}		= '';
+$dir_defaults{path}				= '';
 
 sub save
 {
@@ -68,10 +68,10 @@ sub load
 		print "creating '$config_file'\n";
 		WriteINI ($config_file, \%app);
 	}
-	$app{main}{webserver}		= 0	if $app{main}{webserver} !~ /^(0|1)$/;
-	$app{main}{sync_every}		= 3	if $app{main}{sync_every} !~ /^\d+$/;
+	$app{main}{webserver}			= 0	if $app{main}{webserver} !~ /^(0|1)$/;
+	$app{main}{sync_every}			= 3	if $app{main}{sync_every} !~ /^\d+$/;
 	$app{main}{play_count_limit}	= 0	if $app{main}{play_count_limit} !~ /^\d+$/;
-	$app{main}{debug}		= 0	if $app{main}{debug} !~ /^(0|1)$/;
+	$app{main}{debug}				= 0	if $app{main}{debug} !~ /^(0|1)$/;
 
 	my @tmp		= split(',', $app{main}{media_extensions});
 	my @tmp2	= ();
@@ -83,7 +83,7 @@ sub load
 		push @tmp2, lc $ext;
 	}
 	$app{main}{media_extensions}	= join(',', sort {lc $a cmp lc $b} uniq @tmp2);
-	$media_ext			= join('|', sort {lc $a cmp lc $b} uniq @tmp2);
+	$media_ext						= join('|', sort {lc $a cmp lc $b} uniq @tmp2);
 
 
 	if (! -f $dirs_file)
@@ -100,17 +100,17 @@ sub load
 	{
 		for my $k2(keys %dir_defaults)
 		{
-			$dirs{$k}{$k2} = $dir_defaults{$k2};
-			$dirs{$k}{$k2} = $hash{$k}{$k2} if defined $hash{$k}{$k2};
+			$dirs{$k}{$k2} 		= $dir_defaults{$k2} 	if !defined $dirs{$k}{$k2};
+			$dirs{$k}{$k2} 		= $hash{$k}{$k2} 		if defined $hash{$k}{$k2};
 		}
-		$dirs{$k}{weight}	= 100	if $dirs{$k}{weight} !~ /^\d+$/;
-		$dirs{$k}{weight}	= 100	if $dirs{$k}{weight} > 100;
-		$dirs{$k}{weight}	= 1	if $dirs{$k}{weight} < 1;
+		$dirs{$k}{weight}		= 100					if $dirs{$k}{weight} !~ /^\d+$/;
+		$dirs{$k}{weight}		= 100					if $dirs{$k}{weight} > 100;
+		$dirs{$k}{weight}		= 1						if $dirs{$k}{weight} < 1;
 
-		$dirs{$k}{recursive}	= 0	if $dirs{$k}{recursive} !~ /^(0|1)$/;
-		$dirs{$k}{random}	= 1	if $dirs{$k}{random} !~ /^(0|1)$/;
+		$dirs{$k}{recursive}	= 0						if $dirs{$k}{recursive} !~ /^(0|1)$/;
+		$dirs{$k}{random}		= 1						if $dirs{$k}{random} !~ /^(0|1)$/;
 
-		$dirs{$k}{path}		=~ s/\\/\//g;
+		$dirs{$k}{path}			=~ s/\\/\//g;
 	}
 }
 
@@ -297,15 +297,17 @@ sub trim_history
 		$history_length >= ($info{$dir}{count} - 2)		# sometimes a dir has a tiny amount of files (eg 6) resulting in history not being trimmed with 5 out of 6 being played as % played is only ~83%
 	)
 	{
-		my $bump	= 5 / 100;						# deduct a random percentage between 1-$bump% (stops it trimming constantly)
-		$bump		= 10 / 100	if $info{$dir}{count} < 100;		# if dir has small amount of files increase bump size.
+		# Trim to 75% of total file count (when we hit 80% threshold)
+		# This creates a buffer to prevent trimming every file
+		my $target_size = int($info{$dir}{count} * 0.75);
+		my $trim_count = $history_length - $target_size;
 
-		my $trim_count	= int((1-($percent-$bump)) * $info{$dir}{count});	# get amount of files to trim
-		$trim_count	= 2		if $trim_count <= 1;			# always trim at least 2 files
+		# If only 1 file would be trimmed, trim 2 instead for better randomness
+		$trim_count = 2 if $trim_count <= 1;			# always trim at least 2 files
 
-		print "DEBUG: Trimming History for '$dir', removing $trim_count entrys.\n" if $app{main}{debug};
+		print "DEBUG: Trimming History for '$dir', removing $trim_count entrys (target: 75% = $target_size files).\n" if $app{main}{debug};
 
-		for my $c (0 .. $trim_count)
+		for my $c (0 .. $trim_count-1)
 		{
 			my $f = shift(@{$info{$dir}{history}});	# remove an entry from the front of array
 			delete $history_hash{$f} if defined $history_hash{$f};

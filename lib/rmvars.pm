@@ -49,8 +49,8 @@ $help_txt
 $ascii
 );
 
-our $version		= '5.WIP';
-our $home 		= &get_home;
+our $version		= '5.0.1';
+our $home			= &get_home;
 
 our $media_ext		= '';
 
@@ -112,10 +112,10 @@ our $help_txt = "Run and access web ui from http://localhost:8080\n";
 sub get_home
 {
 	my $home = undef;
-	$home = $ENV{HOME}		if defined $ENV{HOME} && lc $^O ne lc 'MSWin32';
+	$home = $ENV{HOME}			if defined $ENV{HOME} && lc $^O ne lc 'MSWin32';
 	$home = $ENV{USERPROFILE}	if lc $^O eq lc 'MSWin32';
 
-	$home = $ENV{TMP}		if ! defined $home; # surely the os has a tmp if nothing else
+	$home = $ENV{TMP}			if ! defined $home; # surely the os has a tmp if nothing else
 	$home =~ s/\\/\//g;
 
 	$home .= "/.rmplayer";
