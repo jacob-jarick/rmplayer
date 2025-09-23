@@ -122,9 +122,9 @@ $ascii
 # Main Loop
 
 my $play_count			= 0;
-my $loops_since_refresh		= 0;
+my $loops_since_refresh	= 0;
 my $FIRST_STOP			= 1;
-our $STOP			= 0;
+our $STOP				= 0;
 
 while(1)
 {
@@ -233,20 +233,17 @@ sub history_add
 		{
 			if($found)
 			{
-				delete $history_hash{$tmp_file};
 				next;
 			}
 
 			push @{ $info{$parent}{history} }, $tmp_file;
 
-			$history_hash{$tmp_file}	= 1;
 			$found				= 1 if $file eq $tmp_file;
 		}
 	}
 	else
 	{
 		push @{ $info{$parent}{history} }, $file;
-		$history_hash{$file} = 1;
 		&config::trim_history($parent);
 	}
 
@@ -288,8 +285,9 @@ sub play
 
 sub random_select
 {
-	my $dir		= &dir_stack_select;
+	my $dir			= &dir_stack_select;
 	my $play_file	= '';
+	my @tmp			= ();
 
 	if (defined $info{$dir}{history} && scalar @{$info{$dir}{history}} >= $info{$dir}{count})
 	{
@@ -297,11 +295,20 @@ sub random_select
 		&config::trim_history($dir);
 	}
 
-	my @tmp		= ();
+	# Create hash of files in this directory's history for fast lookup
+	my %dir_history = ();
+	if (defined $info{$dir}{history})
+	{
+		for my $hist_file (@{$info{$dir}{history}})
+		{
+			$dir_history{$hist_file} = 1;
+		}
+	}
 
+	# Build list of files NOT in this directory's history
 	for my $file(@{$info{$dir}{contents}})
 	{
-		next if defined $history_hash{$file};
+		next if defined $dir_history{$file};
 		push @tmp, $file;
 	}
 

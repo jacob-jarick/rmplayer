@@ -33,7 +33,6 @@ $config_file
 $dirs_file
 
 %parent_hash
-%history_hash
 %last_modtime
 
 %ignore_hash
@@ -76,7 +75,6 @@ our $config_file	= "$home/config.ini";
 our $dirs_file		= "$home/dirs.ini";
 
 our %parent_hash	= ();
-our %history_hash	= ();
 our %last_modtime	= ();
 our %ignore_hash	= ();
 our %dir_stack		= ();

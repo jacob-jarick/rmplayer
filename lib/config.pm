@@ -149,7 +149,6 @@ sub load_playlist
 				next;
 			}
 			push @tmp, $file;
-			$history_hash{$file} = 1;
 		}
 		@{ $info{$k}{history} } = @tmp;
 
@@ -174,21 +173,13 @@ sub load_playlist
 
 		print "[$k = $info{$k}{count}]" if $app{main}{debug};
 
-		foreach my $key (keys %history_hash)
+		# Clean up history - remove files that no longer exist
+		@tmp = ();
+		for my $key (@{$info{$k}{history}})
 		{
 			if (! -f $key)
 			{
 				print "\n* WARNING: $key has been moved or deleted\n";
-				delete $history_hash{$key};
-			}
-		}
-
-		@tmp = ();
-		for my $key (@{$info{$k}{history}})
-		{
-			if(!defined $history_hash{$key})
-			{
-				print "\n* WARNING: $key is in history array but not in history hash. Deleting from history array\n";
 				next;
 			}
 			push @tmp, $key;
@@ -279,10 +270,6 @@ sub trim_history
 	{
 		if ($history_length >= $info{$dir}{count})
 		{
-			for my $file(@{$info{$dir}{history}})
-			{
-				delete $history_hash{$file};
-			}
 			@{$info{$dir}{history}} = ();
 		}
 		&save;
@@ -310,7 +297,6 @@ sub trim_history
 		for my $c (0 .. $trim_count-1)
 		{
 			my $f = shift(@{$info{$dir}{history}});	# remove an entry from the front of array
-			delete $history_hash{$f} if defined $history_hash{$f};
 		}
 	}
 }
