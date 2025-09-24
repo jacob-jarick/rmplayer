@@ -9,6 +9,16 @@ use Archive::Zip;
 
 print "\n\nChecking for Updates\n\n";
 
+# Check for --force option
+my $force_update = 0;
+for my $arg (@ARGV) {
+	if ($arg eq '--force') {
+		$force_update = 1;
+		print "Force update mode enabled\n";
+		last;
+	}
+}
+
 my $dir			= "$Bin/updates";
 my $url			= 'http://raw.githubusercontent.com/jacob-jarick/rmplayer/master/builddate.txt';
 my $file		= &get($url);
@@ -20,7 +30,7 @@ if(!-d $dir)
 	mkdir $dir;
 }
 
-&check_for_update;
+&check_for_update unless $force_update;
 
 print "\n\nUpdating\n\n";
 
@@ -48,9 +58,9 @@ exit;
 sub get
 {
 	my $filename	= $url;
-	$filename	=~ m/.*\/(.*)$/;
-	$filename	= $1;
-	my $save	= "$dir/$filename";
+	$filename		=~ m/.*\/(.*)$/;
+	$filename		= $1;
+	my $save		= "$dir/$filename";
 
 	unlink $save;
 
@@ -60,9 +70,9 @@ sub get
 	{
 		# thanks: https://superuser.com/questions/25538/how-to-download-files-from-command-line-in-windows-like-wget-is-doing
 
-		$save =~ s/\//\\/g;
+		$save	=~ s/\//\\/g;
+		my $cmd	= "powershell -command \"Invoke-WebRequest -OutFile '$save' '$url'\"";
 
-		my $cmd = "powershell -command \"Invoke-WebRequest -OutFile '$save' '$url'\"";
 		print "$cmd\n";
 		system($cmd);
 		return $save;
@@ -108,3 +118,5 @@ sub check_for_update
 		exit;
 	}
 }
+
+
