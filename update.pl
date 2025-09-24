@@ -9,9 +9,9 @@ use Archive::Zip;
 
 print "\n\nChecking for Updates\n\n";
 
-my $dir		= "$Bin/updates";
-my $url		= 'http://raw.githubusercontent.com/jacob-jarick/rmplayer/master/builddate.txt';
-my $file	= &get($url);
+my $dir			= "$Bin/updates";
+my $url			= 'http://raw.githubusercontent.com/jacob-jarick/rmplayer/master/builddate.txt';
+my $file		= &get($url);
 my $old_file	= "$Bin/builddate.txt";
 
 if(!-d $dir)
@@ -47,7 +47,6 @@ exit;
 
 sub get
 {
-
 	my $filename	= $url;
 	$filename	=~ m/.*\/(.*)$/;
 	$filename	= $1;
@@ -108,5 +107,4 @@ sub check_for_update
 		print "No update needed\n";
 		exit;
 	}
-
 }

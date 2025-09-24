@@ -53,10 +53,10 @@ my $links = readjf($links_file);
 
 sub handle_request
 {
-	my $self = shift;
-	my $cgi  = shift;
+	my $self	= shift;
+	my $cgi		= shift;
 
-	my $path = $cgi->path_info();
+	my $path	= $cgi->path_info();
 	my $handler = $dispatch{$path};
 
 	if (ref($handler) eq 'CODE')
@@ -70,10 +70,10 @@ sub handle_request
 		$path_tmp =~ s/^\/(web|scripts)\///;
 		if($path =~ /\/web\/.*(htm|html)/ && -f "$web_dir/$path_tmp")
 		{
-			print "HTTP/1.0 200 OK\r\n";
+			print 	"HTTP/1.0 200 OK\r\n";
 			print	$cgi->header,
-				html_insert("$web_dir/$path_tmp", ''),
-				$cgi->end_html;
+					html_insert("$web_dir/$path_tmp", ''),
+					$cgi->end_html;
 		}
 		elsif(($path =~ /\/scripts\/.*(sh|bat|exe)/i && -f "$Bin$path"))
 		{
@@ -84,10 +84,10 @@ sub handle_request
 		}
 		else
 		{
-			print "HTTP/1.0 404 Not found\r\n";
-			print $cgi->header,
-				html_insert($index_html, "handle_request Path '$path' Not Found. file: $web_dir$path does not exist\n"),
-				$cgi->end_html;
+			print	"HTTP/1.0 404 Not found\r\n";
+			print	$cgi->header,
+					html_insert($index_html, "handle_request Path '$path' Not Found. file: $web_dir$path does not exist\n"),
+					$cgi->end_html;
 		}
 	}
 }
@@ -360,14 +360,12 @@ sub r_scripts
 	my @dir_list = sort(readdir(DIR));
 	closedir DIR;
 
-	my $c = 0;
 	for my $s (@dir_list)
 	{
-		next if ($s !~ /\.(bat|sh|exe)$/i);
-
-		next if(lc $^O eq "mswin32" && $s !~ /\.(bat|exe)$/i);
-		next if(lc $^O ne "mswin32" && $s !~ /\.(sh)$/);
-		$c++;
+		# windows only executeables
+		next if(lc $^O eq "mswin32" && $s !~ /\.(bat|ps1|exe)$/i);
+		# unix only scripts
+		next if(lc $^O ne "mswin32" && $s !~ /\.(sh)$/i);
 
 		$msg .="
 			<a href=\"/scripts/$s\">
